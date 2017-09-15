@@ -52,7 +52,7 @@ class Similarity extends Serializable{
 //		 .set("spark.driver.allowMultipleContexts","true")
    @transient
 		val sc=new SparkContext(conf)
-  val partition=200
+  val partition=10
 ////  @transient
 //  val driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
 //            AuthTokens.basic("neo4j", "casia@1234"));
@@ -106,7 +106,7 @@ class Similarity extends Serializable{
       ):(RDD[ReIdAttributesTemp])={
 		
     println("传入的list大小为："+list.size())
-    val rdd=sc.parallelize(list.asScala)
+    val rdd=sc.parallelize(list.asScala).repartition(partition)
     println("partitions的大小是:"+rdd.partitions.size)
     return (rdd)
   }
@@ -441,10 +441,10 @@ else if(args(0).equals("hour")){
 //    	println("list:"+list.toString())
     	rdd4=listToRdd(list)
     }
-    /*rdd4.collect().foreach(f⇒{
+    rdd4.collect().foreach(f⇒{
     	println("rdd4:-------------------------------")
       println(f)
-      })*/
+      })
       /**
        * 没有成功
        */
@@ -473,8 +473,10 @@ else if(args(0).equals("hour")){
     eachList
     })
    e.collect().foreach(f⇒{
-    	println("d:-------------------------------")
-      println(f)
+    	for(i <- 0 until f.size()){
+    		println("e:-------------------------------")
+    	  println(f.toString())
+    	}
       })
     
       val rdd6=rdd4.map(f⇒(f.getTrackletID1,(f.getTrackletID2,f.getSim)))

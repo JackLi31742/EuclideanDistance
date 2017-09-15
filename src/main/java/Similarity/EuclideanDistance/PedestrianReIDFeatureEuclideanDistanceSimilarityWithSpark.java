@@ -329,18 +329,18 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 
 				
 				
-				List<Hour> hourList=dbConnector.getHours();
-			
-				if (hourList!=null) {
-			
-		
-					for (int i = 0; i < hourList.size(); i++) {
-						List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(hourList.get(i));
+//				List<Hour> hourList=dbConnector.getHours();
+//			
+//				if (hourList!=null) {
+//			
+//		
+//					for (int i = 0; i < hourList.size(); i++) {
+//						List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(hourList.get(i));
 				
 				/**
 				 * 模拟得到hourList下的节点
 				 */
-				/*List<ReIdAttributesTemp> list=new ArrayList<>();
+				List<ReIdAttributesTemp> list=new ArrayList<>();
 				List<Minute> minList=dbConnector.getMinutes();
 				
 				if (minList != null) {
@@ -353,11 +353,11 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 							}
 						}
 					}
-				}*/
+				}
 				if (list != null) {
 
 					if (list.size() > 0) {
-								System.out.println("找到的hour是："+hourList.get(i).toString());
+//								System.out.println("找到的hour是："+hourList.get(i).toString());
 							
 								try {
 									getSim(list,args);
@@ -365,8 +365,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
-							}
-						}
+//							}
+//						}
 					}
 				}
 			
