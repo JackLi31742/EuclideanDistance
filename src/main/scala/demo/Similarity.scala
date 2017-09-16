@@ -413,7 +413,11 @@ else if(args(0).equals("hour")){
 //    rdd2.collect().foreach(println)
 //    val start=getCurrent_time
 //    val rdd3=rdd2.map(r⇒(r._1._1,r._2._1,euclidean(r._1._2,r._2._2)))
-    val rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
+    var rdd3:RDD[(String, (String, Double))]=null
+    if(rdd2!=null){
+      
+    	rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
+    }
 //    val rdd4=rdd3.first()
 //    println("rdd4--------------------------------------:"+rdd4)
 //    val end =getCurrent_time
@@ -823,15 +827,15 @@ else if(args(0).equals("hour")){
   
   //欧氏距离
   def euclidean(x: Array[Float], y: Array[Float]) :Double= {
-//    println("eeeeeeeeeeee=========================eeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
-//   println("传入的x是："+x(0)) 
-//   println("传入的y是："+y(0)) 
+    val startTime = System.currentTimeMillis();
    var distance = 0.0;
 
 		for (i <- 0 until x.length) {
 			var temp = Math.pow((x(i) - y(i)), 2);
 			distance += temp;
 		}
+		val EndTime=System.currentTimeMillis();
+		println("Cost time of euclidean: " + (EndTime-startTime) + "ms")
 		
 		distance 
 		/*distance = Math.sqrt(distance);
