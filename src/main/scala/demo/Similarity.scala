@@ -27,6 +27,8 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import java.util.ArrayList
+import test.FloatPointerDemo._
+import test.FloatPointerDemo
 
 /*class ForDemo {
   case class Point(x: Double, y: Double)
@@ -106,7 +108,7 @@ class Similarity extends Serializable{
       ):(RDD[ReIdAttributesTemp])={
 		
     println("传入的list大小为："+list.size())
-    val rdd=sc.parallelize(list.asScala).repartition(partition)
+    val rdd=sc.parallelize(list.asScala)
     println("partitions的大小是:"+rdd.partitions.size)
     return (rdd)
   }
@@ -222,6 +224,15 @@ if(args(0).equals("minute")){
 //    val start=getCurrent_time
 //    val rdd3=rdd2.map(r⇒(r._1._1,r._2._1,euclidean(r._1._2,r._2._2)))
     val rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
+    /*val rdd3=rdd2.map{r⇒{
+      
+     var settings:FloatPointerDemo.Settings  = new FloatPointerDemo.Settings();
+		var finder:FloatPointerDemo  = new FloatPointerDemo(settings);
+		println(getMat(r._1._2))
+		println(getMat(r._2._2))
+		finder.flannFindPairs(getMat(r._1._2),getMat(r._2._2));
+    }
+      }*/
 //    val rdd4=rdd3.first()
 //    println("rdd4--------------------------------------:"+rdd4)
 //    val end =getCurrent_time
@@ -232,11 +243,12 @@ if(args(0).equals("minute")){
 //    println("传入的rdd4是：-------------------------------------------")
 //    val re=rdd4.top(3)(Ordering.by[(Double, (String, String,Double)), Double](_._1))  
 //    val startTop=getCurrent_time
-    /*println("rdd3的个数是："+rdd3.count())
-    rdd3.collect().foreach(f⇒{
-    	println("rdd3:-------------------------------")
-      println(f)
-      })*/
+//    
+//    println("rdd3的个数是："+rdd3.count())
+//    rdd3.collect().foreach(f⇒{
+//    	println("rdd3:-------------------------------")
+//      println(f)
+//      })
     val b=rdd3.groupByKey()
     /*b.collect().foreach(f⇒{
     	println("b:-------------------------------")
@@ -269,7 +281,8 @@ if(args(0).equals("minute")){
     println("Cost time of every operation: " + (operationEveryTime) + "ms")
 
     //测试不收集会不会执行add操作
-    var i=0
+    //闭包，没用的
+//    var i=0
     
     //依然是spark任务
     /*result.foreachPartition(f⇒{
@@ -337,7 +350,7 @@ if(args(0).equals("minute")){
             			println("min保存完成的结果是："+outlist.toString())
             }
         }
-        		i =i+ 1
+//        		i =i+ 1
       })
         		//如果不行再测试
         	dbConnector.finalize()
@@ -346,7 +359,7 @@ if(args(0).equals("minute")){
 //    	println("内层foreach结束---------------------------")
       
     })
-        		println("i:"+i)
+//        		println("i:"+i)
 //    println("外层foreachPartition结束---------------------------")
      val dbendTime = System.currentTimeMillis();
      val dbEveryTime=dbendTime - dbstartTime
@@ -366,6 +379,7 @@ if(args(0).equals("minute")){
 //    val rdd5=rdd6.map(r⇒(r._2._1,r._2._2,r._1))
 //    println("结果是：-------------------------------------------")
 //    rdd5.collect().foreach(println)
+//    (1,1)
      }
 
 else if(args(0).equals("hour")){
@@ -421,8 +435,10 @@ else if(args(0).equals("hour")){
     	println("b:-------------------------------")
       println(f)
       })*/
+    
+     //必须收集才可以将work上的信息拿回来
+    /*
     var list:java.util.List[ReIdAttributesTemp]=new ArrayList[ReIdAttributesTemp]()
-    //必须收集才可以将work上的信息拿回来
     b.collect().foreach(f⇒{
     	var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
     	  
@@ -444,18 +460,16 @@ else if(args(0).equals("hour")){
     rdd4.collect().foreach(f⇒{
     	println("rdd4:-------------------------------")
       println(f)
-      })
-      /**
-       * 没有成功
-       */
-    var d:RDD[(String, (String, Double))]=null
+      })*/
+      
+//    var d:RDD[(String, (String, Double))]=null
     val e= b.map(f⇒{
       
     	var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
     	  
     			val eachList=dbConnector.getPersonSimList(f._1)
-    					println("eachList:"+eachList.size()+", "+eachList.toString())
-    					if(eachList!=null){
+//    					println("eachList:"+eachList.size()+", "+eachList.toString())
+//    					if(eachList!=null){
 //    					    var eachRdd=	listToRdd(eachList)
 //    					    eachRdd.collect().foreach(f⇒{
 //    	              println("eachRdd:-----------foreach内部--------------------")
@@ -467,19 +481,25 @@ else if(args(0).equals("hour")){
 //    	              println("d:-----------foreach内部--------------------")
 //                    println(f)
 //                    })
-    					}
+//    					}
       dbConnector.finalize()
     	dbConnector=null
-    eachList
+      eachList
     })
-   e.collect().foreach(f⇒{
+   /*e.collect().foreach(f⇒{
     	for(i <- 0 until f.size()){
     		println("e:-------------------------------")
-    	  println(f.toString())
+    	  println(f.get(i).toString())
     	}
-      })
+      })*/
     
-      val rdd6=rdd4.map(f⇒(f.getTrackletID1,(f.getTrackletID2,f.getSim)))
+      val rdd6=e.flatMap(f⇒f.asScala).map(f⇒(f.getTrackletID1,(f.getTrackletID2,f.getSim)))
+//        for(i <- 0 until f.size()){
+////        (f.get(i).getTrackletID1,(f.get(i).getTrackletID2,f.get(i).getSim))
+//          f.get(i)
+//        }
+        
+      
       /*rdd6.collect().foreach(f⇒{
     	println("rdd6:-------------------------------")
       println(f)
@@ -510,6 +530,7 @@ else if(args(0).equals("hour")){
 //    println("result的个数是："+result.count())
     
     println("topk 结束")
+    
     val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
     val operationEndTime=System.currentTimeMillis();

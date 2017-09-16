@@ -1,16 +1,11 @@
 package test;
 
 import static org.bytedeco.javacpp.opencv_core.CV_32FC1;
-import static org.bytedeco.javacpp.opencv_core.CV_32FC2;
-import static org.bytedeco.javacpp.opencv_core.CV_32SC1;
-import static org.bytedeco.javacpp.opencv_core.CV_64FC1;
-import static org.bytedeco.javacpp.opencv_core.CV_8UC1;
 import static org.bytedeco.javacpp.opencv_core.cvarrToMat;
 import static org.bytedeco.javacpp.opencv_flann.FLANN_DIST_HAMMING;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.logging.Logger;
 
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
@@ -24,8 +19,24 @@ import org.bytedeco.javacpp.opencv_flann.IndexParams;
 import org.bytedeco.javacpp.opencv_flann.LshIndexParams;
 import org.bytedeco.javacpp.opencv_flann.SearchParams;
 import org.bytedeco.javacv.BaseChildSettings;
-import org.bytedeco.javacv.ObjectFinder;
+
+import Similarity.EuclideanDistance.util.ConsoleLogger;
+import Similarity.EuclideanDistance.util.Logger;
 public class FloatPointerDemo {
+//	static final Logger logger = Logger.getLogger(ObjectFinder.class.getName());
+	public static Logger logger=new ConsoleLogger();
+
+    KeyPointVector objectKeypoints = null, imageKeypoints = null;
+    Mat objectDescriptors = null, imageDescriptors = null;
+    Mat indicesMat, distsMat;
+    Index flannIndex = null;
+    IndexParams indexParams = null;
+    SearchParams searchParams = null;
+    Mat pt1 = null, pt2 = null, mask = null, H = null;
+    ArrayList<Integer> ptpairs = null;
+    public FloatPointerDemo(Settings settings) {
+        setSettings(settings);
+    }
 	public static class Settings extends BaseChildSettings {
         IplImage objectImage = null;
         AKAZE detector = AKAZE.create();
@@ -141,21 +152,21 @@ public class FloatPointerDemo {
         logger.info(total + " object descriptors");
     }
 
-    static final Logger logger = Logger.getLogger(ObjectFinder.class.getName());
-
-    KeyPointVector objectKeypoints = null, imageKeypoints = null;
-    Mat objectDescriptors = null, imageDescriptors = null;
-    Mat indicesMat, distsMat;
-    Index flannIndex = null;
-    IndexParams indexParams = null;
-    SearchParams searchParams = null;
-    Mat pt1 = null, pt2 = null, mask = null, H = null;
-    ArrayList<Integer> ptpairs = null;
+    
+    
+    
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		Loader.load(opencv_core.class);
 		float[] arr1={1.0f,2.0f,3.0f,5.0f};
+		float[] arr2={1.0f,2.0f,3.0f,4.0f};
 		opencv_core.Mat mat1 =getMat(arr1);
+		opencv_core.Mat mat2 =getMat(arr2);
+		FloatPointerDemo.Settings settings = new FloatPointerDemo.Settings();
+//		settings.useFLANN = true;
+//		settings.ransacReprojThreshold = 5;
+		FloatPointerDemo finder = new FloatPointerDemo(settings);
+		finder.flannFindPairs(mat1,mat2);
 	}
 
 	
@@ -165,7 +176,7 @@ public class FloatPointerDemo {
         return mat;
     }
 	
-	void flannFindPairs(Mat objectDescriptors, Mat imageDescriptors) {
+	public void flannFindPairs(Mat objectDescriptors, Mat imageDescriptors) {
         int length = objectDescriptors.rows();
 
         // find nearest neighbors using FLANN
@@ -180,5 +191,7 @@ public class FloatPointerDemo {
                 ptpairs.add(indicesBuf.get(2*i));
             }
         }
+        logger.info("indicesBuf:"+indicesBuf.toString());
+        logger.info("distsBuf:"+distsBuf.toString());
     }
 }
