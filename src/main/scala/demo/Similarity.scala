@@ -54,7 +54,7 @@ class Similarity extends Serializable{
 //		 .set("spark.driver.allowMultipleContexts","true")
    @transient
 		val sc=new SparkContext(conf)
-  val partition=10
+  val partition=5
 ////  @transient
 //  val driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
 //            AuthTokens.basic("neo4j", "casia@1234"));
@@ -135,11 +135,15 @@ class Similarity extends Serializable{
 //      EuDis(rdd,broadcastVar)
 //      broadcastVar.unpersist()
 //    })
-    var rddArr=rddGlom.collect()
+    		
+    				var operationTime=0l 
+    				var dbTime=0l
+    				val count=sc.accumulator(0)
+    				
     //而且由于每个都要得到KNN，所以就不需要汇总了
 //    val resultListBuf = scala.collection.mutable.ListBuffer.empty[Array[(String, String, Double)]]
-    var operationTime=0l 
-    var dbTime=0l
+    /*
+    var rddArr=rddGlom.collect()
     for(i <- 0 until rddArr.length){
       var arr=rddArr(i)
       val broadcastVar = sc.broadcast(arr)
@@ -156,7 +160,30 @@ class Similarity extends Serializable{
 //        print(arr(j).getTrackletID+",")
 //      }
       
-    }
+    }*/
+    		
+    		rddGlom.foreach(f⇒{
+//    		  while(f.hasNext){
+    		    var temp=f
+    		    for(j <-0 until temp.length){
+    		      
+    		    	println("temp:"+count+":"+temp(j).getTrackletID)
+    		    }
+//    		  f.foreach(f⇒{
+    		    val broadcastVar = sc.broadcast(temp)
+    		    val resultTime=everyOneNeedEuDis(rdd,broadcastVar, args)
+    		    operationTime +=resultTime._1
+            dbTime+=resultTime._2
+            count+=1
+            broadcastVar.unpersist()
+            println(count+"次----------------while-------------------结束")
+//    		  })
+//    		}
+    		  println(count+"次---------------foreachPartition-------------------结束")
+    		})
+    		println(count+"次----------------out-------------------结束")
+    		
+    		
     println("打印的最终结果是：")
     println("Cost time of operation: " + (operationTime) + "ms")
     println("Cost time of db: " + (dbTime) + "ms");
@@ -195,35 +222,44 @@ if(args(0).equals("minute")){
       
     
     val rdd1 = rddWithIndex.map(r ⇒ ((r.getTrackletID, r.getFeatureVector)))
-    /*rdd1.collect().foreach(f⇒{
+    rdd1.collect().foreach(f⇒{
     	println("rdd1:-------------------------------")
       println(f)
-      })*/
+      })
    /* var broadArr=broad.value
     for(i<- 0 until broadArr.length){
       
     }*/
     val broadRdd=sc.parallelize(broad.value).map(r ⇒ ((r.getTrackletID, r.getFeatureVector))).repartition(partition)
-    /*broadRdd.collect().foreach(f⇒{
+    broadRdd.collect().foreach(f⇒{
     	println("broadRdd:-------------------------------")
       println(f)
-      })*/
+      })
     val caRDD = rdd1.cartesian(broadRdd)
-    /*caRDD.collect().foreach(f⇒{
+    caRDD.collect().foreach(f⇒{
     	println("caRDD:-------------------------------")
       println(f)
-      })*/
+      })
     val rdd2=caRDD.filter(r⇒r._1._1 != r._2._1).filter(r⇒(r._1._2!=null)&&(r._2._2!=null))
     
-     /*println("rdd2的个数是："+rdd2.count())
+     println("rdd2的个数是："+rdd2.count())
+     
     rdd2.collect().foreach(r⇒{
     	println("rdd2:-------------------------------")
       println(r)
-      })*/
+      })
 //    rdd2.collect().foreach(println)
 //    val start=getCurrent_time
 //    val rdd3=rdd2.map(r⇒(r._1._1,r._2._1,euclidean(r._1._2,r._2._2)))
-    val rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
+//    val rdd3=rdd2.map{r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
+    /*val startTime = System.currentTimeMillis();
+    rdd2.foreach(r⇒(r._1._1,euclidean(r._1._2,r._2._2)))
+		val EndTime=System.currentTimeMillis();
+		println("Cost time of euclidean: " + (EndTime-startTime) + "ms")*/
+    val rdd3=rdd2.mapPartitions(r⇒{
+      r.map(r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2))))
+      
+      })
     /*val rdd3=rdd2.map{r⇒{
       
      var settings:FloatPointerDemo.Settings  = new FloatPointerDemo.Settings();
@@ -244,21 +280,21 @@ if(args(0).equals("minute")){
 //    val re=rdd4.top(3)(Ordering.by[(Double, (String, String,Double)), Double](_._1))  
 //    val startTop=getCurrent_time
 //    
-//    println("rdd3的个数是："+rdd3.count())
-//    rdd3.collect().foreach(f⇒{
-//    	println("rdd3:-------------------------------")
-//      println(f)
-//      })
+    println("rdd3的个数是："+rdd3.count())
+    rdd3.collect().foreach(f⇒{
+    	println("rdd3:-------------------------------")
+      println(f)
+      })
     val b=rdd3.groupByKey()
-    /*b.collect().foreach(f⇒{
+    b.collect().foreach(f⇒{
     	println("b:-------------------------------")
       println(f)
-      })*/
+      })
    val c= b.map(f⇒(f._1,(f._2.toList.sortBy(f⇒f._2))))
-   /*c.collect().foreach(f⇒{
+   c.collect().foreach(f⇒{
     	println("c:-------------------------------")
       println(f)
-      })*/
+      })
       val TOP3startTime = System.currentTimeMillis();
     val result=c.map(f⇒(f._1,f._2.take(3)))
      val TOP3EndTime=System.currentTimeMillis();
@@ -269,13 +305,13 @@ if(args(0).equals("minute")){
 //    val endTop =getCurrent_time
 //    println("topk用时:"+endTop+"-"+startTop+"="+(endTop-startTop))
     println("topk 结束")
-//    println("result的个数是："+result.count())
+    println("result的个数是："+result.count())
     val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
-    /*result.collect().foreach(f⇒{
+    result.collect().foreach(f⇒{
     	println("result:-------------------------------")
       println(f)
-      })*/
+      })
     val operationEndTime=System.currentTimeMillis();
     val operationEveryTime=operationEndTime - dbstartTime
     println("Cost time of every operation: " + (operationEveryTime) + "ms")
@@ -827,15 +863,16 @@ else if(args(0).equals("hour")){
   
   //欧氏距离
   def euclidean(x: Array[Float], y: Array[Float]) :Double= {
-    val startTime = System.currentTimeMillis();
+//    val startTime = System.currentTimeMillis();
    var distance = 0.0;
 
 		for (i <- 0 until x.length) {
 			var temp = Math.pow((x(i) - y(i)), 2);
+//			var temp = Math.pow(x(i), 2)+Math.pow(y(i), 2);
 			distance += temp;
 		}
-		val EndTime=System.currentTimeMillis();
-		println("Cost time of euclidean: " + (EndTime-startTime) + "ms")
+//		val EndTime=System.currentTimeMillis();
+//		println("Cost time of euclidean: " + (EndTime-startTime) + "ms")
 		
 		distance 
 		/*distance = Math.sqrt(distance);
