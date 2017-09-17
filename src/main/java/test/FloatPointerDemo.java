@@ -37,6 +37,12 @@ public class FloatPointerDemo {
     public FloatPointerDemo(Settings settings) {
         setSettings(settings);
     }
+    
+	public FloatPointerDemo() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
 	public static class Settings extends BaseChildSettings {
         IplImage objectImage = null;
         AKAZE detector = AKAZE.create();
@@ -44,7 +50,7 @@ public class FloatPointerDemo {
         int matchesMin = 4;
         double ransacReprojThreshold = 1.0;
         boolean useFLANN = false;
-
+/*
         public IplImage getObjectImage() {
             return objectImage;
         }
@@ -92,7 +98,7 @@ public class FloatPointerDemo {
         }
         public void setNOctaveLayers(int nOctaveLayers) {
             detector.setNOctaveLayers(nOctaveLayers);
-        }
+        }*/
 
         public double getDistanceThreshold() {
             return distanceThreshold;
@@ -162,9 +168,11 @@ public class FloatPointerDemo {
 		float[] arr2={1.0f,2.0f,3.0f,4.0f};
 		opencv_core.Mat mat1 =getMat(arr1);
 		opencv_core.Mat mat2 =getMat(arr2);
+		System.out.println(mat1);
+		System.out.println(mat2);
 		FloatPointerDemo.Settings settings = new FloatPointerDemo.Settings();
-//		settings.useFLANN = true;
-//		settings.ransacReprojThreshold = 5;
+		settings.useFLANN = true;
+		settings.ransacReprojThreshold = 5;
 		FloatPointerDemo finder = new FloatPointerDemo(settings);
 		finder.flannFindPairs(mat1,mat2);
 	}
