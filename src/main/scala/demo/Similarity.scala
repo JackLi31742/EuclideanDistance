@@ -127,7 +127,8 @@ class Similarity extends Serializable{
 //    		var rddWithIndex=rdd
     //这里原来是rddWithIndex
 //    var rddGlom=rddWithIndex.repartition(10).glom()
-    		var rddGlom=rdd.repartition(partition).glom()
+      //小数据量需要.repartition(partition)
+    		var rddGlom=rdd.glom()
     
 //    println("checkpoint路径是:"+sc.getCheckpointDir)
 //    rddGlom.map(f⇒{
@@ -138,11 +139,11 @@ class Similarity extends Serializable{
     		
     				var operationTime=0l 
     				var dbTime=0l
-    				val count=sc.accumulator(0)
+//    				val count=sc.accumulator(0)
     				
     //而且由于每个都要得到KNN，所以就不需要汇总了
 //    val resultListBuf = scala.collection.mutable.ListBuffer.empty[Array[(String, String, Double)]]
-    /*
+    
     var rddArr=rddGlom.collect()
     for(i <- 0 until rddArr.length){
       var arr=rddArr(i)
@@ -160,8 +161,9 @@ class Similarity extends Serializable{
 //        print(arr(j).getTrackletID+",")
 //      }
       
-    }*/
-    		
+    }
+    		/*
+    		 * 测试失败
     		rddGlom.foreach(f⇒{
 //    		  while(f.hasNext){
     		    var temp=f
@@ -182,7 +184,7 @@ class Similarity extends Serializable{
     		  println(count+"次---------------foreachPartition-------------------结束")
     		})
     		println(count+"次----------------out-------------------结束")
-    		
+    		*/
     		
     println("打印的最终结果是：")
     println("Cost time of operation: " + (operationTime) + "ms")
@@ -222,32 +224,33 @@ if(args(0).equals("minute")){
       
     
     val rdd1 = rddWithIndex.map(r ⇒ ((r.getTrackletID, r.getFeatureVector)))
-    rdd1.collect().foreach(f⇒{
+    /*rdd1.collect().foreach(f⇒{
     	println("rdd1:-------------------------------")
       println(f)
-      })
+      })*/
    /* var broadArr=broad.value
     for(i<- 0 until broadArr.length){
       
     }*/
-    val broadRdd=sc.parallelize(broad.value).map(r ⇒ ((r.getTrackletID, r.getFeatureVector))).repartition(partition)
-    broadRdd.collect().foreach(f⇒{
+      //.repartition(partition)
+    val broadRdd=sc.parallelize(broad.value).map(r ⇒ ((r.getTrackletID, r.getFeatureVector)))
+    /*broadRdd.collect().foreach(f⇒{
     	println("broadRdd:-------------------------------")
       println(f)
-      })
+      })*/
     val caRDD = rdd1.cartesian(broadRdd)
-    caRDD.collect().foreach(f⇒{
+    /*caRDD.collect().foreach(f⇒{
     	println("caRDD:-------------------------------")
       println(f)
-      })
+      })*/
     val rdd2=caRDD.filter(r⇒r._1._1 != r._2._1).filter(r⇒(r._1._2!=null)&&(r._2._2!=null))
     
-     println("rdd2的个数是："+rdd2.count())
+    /* println("rdd2的个数是："+rdd2.count())
      
     rdd2.collect().foreach(r⇒{
     	println("rdd2:-------------------------------")
       println(r)
-      })
+      })*/
 //    rdd2.collect().foreach(println)
 //    val start=getCurrent_time
 //    val rdd3=rdd2.map(r⇒(r._1._1,r._2._1,euclidean(r._1._2,r._2._2)))
@@ -280,21 +283,21 @@ if(args(0).equals("minute")){
 //    val re=rdd4.top(3)(Ordering.by[(Double, (String, String,Double)), Double](_._1))  
 //    val startTop=getCurrent_time
 //    
-    println("rdd3的个数是："+rdd3.count())
+   /* println("rdd3的个数是："+rdd3.count())
     rdd3.collect().foreach(f⇒{
     	println("rdd3:-------------------------------")
       println(f)
-      })
+      })*/
     val b=rdd3.groupByKey()
-    b.collect().foreach(f⇒{
+   /* b.collect().foreach(f⇒{
     	println("b:-------------------------------")
       println(f)
-      })
+      })*/
    val c= b.map(f⇒(f._1,(f._2.toList.sortBy(f⇒f._2))))
-   c.collect().foreach(f⇒{
+   /*c.collect().foreach(f⇒{
     	println("c:-------------------------------")
       println(f)
-      })
+      })*/
       val TOP3startTime = System.currentTimeMillis();
     val result=c.map(f⇒(f._1,f._2.take(3)))
      val TOP3EndTime=System.currentTimeMillis();
@@ -305,13 +308,13 @@ if(args(0).equals("minute")){
 //    val endTop =getCurrent_time
 //    println("topk用时:"+endTop+"-"+startTop+"="+(endTop-startTop))
     println("topk 结束")
-    println("result的个数是："+result.count())
+//    println("result的个数是："+result.count())
     val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
-    result.collect().foreach(f⇒{
+    /*result.collect().foreach(f⇒{
     	println("result:-------------------------------")
       println(f)
-      })
+      })*/
     val operationEndTime=System.currentTimeMillis();
     val operationEveryTime=operationEndTime - dbstartTime
     println("Cost time of every operation: " + (operationEveryTime) + "ms")
@@ -428,7 +431,7 @@ else if(args(0).equals("hour")){
     for(i<- 0 until broadArr.length){
       
     }*/
-    val broadRdd=sc.parallelize(broad.value).map(r ⇒ ((r.getTrackletID, r.getFeatureVector,r.getStart))).repartition(partition)
+    val broadRdd=sc.parallelize(broad.value).map(r ⇒ ((r.getTrackletID, r.getFeatureVector,r.getStart)))
    /* println("broadRdd的个数是："+broadRdd.count())
     broadRdd.collect().foreach(f⇒{
     	println("broadRdd:-------------------------------")
@@ -452,8 +455,13 @@ else if(args(0).equals("hour")){
     var rdd3:RDD[(String, (String, Double))]=null
     if(rdd2!=null){
       
-    	rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
-    }
+//    	rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
+    
+      rdd3=rdd2.mapPartitions(r⇒{
+      r.map(r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2))))
+      
+      })
+      }
 //    val rdd4=rdd3.first()
 //    println("rdd4--------------------------------------:"+rdd4)
 //    val end =getCurrent_time
