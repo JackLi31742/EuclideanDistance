@@ -29,6 +29,7 @@ import org.neo4j.driver.v1.Session;
 import java.util.ArrayList
 import test.FloatPointerDemo._
 import test.FloatPointerDemo
+import org.apache.spark.storage.StorageLevel
 
 /*class ForDemo {
   case class Point(x: Double, y: Double)
@@ -137,8 +138,8 @@ class Similarity extends Serializable{
 //      broadcastVar.unpersist()
 //    })
     		
-    				var operationTime=0l 
-    				var dbTime=0l
+//    				var operationTime=0l 
+//    				var dbTime=0l
 //    				val count=sc.accumulator(0)
     				
     //而且由于每个都要得到KNN，所以就不需要汇总了
@@ -150,8 +151,8 @@ class Similarity extends Serializable{
       val broadcastVar = sc.broadcast(arr)
       //rdd原来也是rddWithIndex
       val resultTime=everyOneNeedEuDis(rdd,broadcastVar, args)
-      operationTime +=resultTime._1
-      dbTime+=resultTime._2
+//      operationTime +=resultTime._1
+//      dbTime+=resultTime._2
      
 //      resultListBuf +=result
       println(i+"次-----------------------------------结束")
@@ -187,8 +188,8 @@ class Similarity extends Serializable{
     		*/
     		
     println("打印的最终结果是：")
-    println("Cost time of operation: " + (operationTime) + "ms")
-    println("Cost time of db: " + (dbTime) + "ms");
+//    println("Cost time of operation: " + (operationTime) + "ms")
+//    println("Cost time of db: " + (dbTime) + "ms");
     }finally {
       println("glom finally");
 //      dbConnSingleton.getInst.finalize()
@@ -298,26 +299,33 @@ if(args(0).equals("minute")){
     	println("c:-------------------------------")
       println(f)
       })*/
-      val TOP3startTime = System.currentTimeMillis();
+   
+   //计算top的时间
+//      val TOP3startTime = System.currentTimeMillis();
     val result=c.map(f⇒(f._1,f._2.take(3)))
-     val TOP3EndTime=System.currentTimeMillis();
-    val result10=c.map(f⇒(f._1,f._2.take(10)))
-    val TOP10EndTime=System.currentTimeMillis();
-    println("Cost time of TOP3: " + (TOP3EndTime-TOP3startTime) + "ms")
-    println("Cost time of TOP10: " + (TOP10EndTime-TOP3EndTime) + "ms")
+    
+//     val TOP3EndTime=System.currentTimeMillis();
+    //top10
+//    val result10=c.map(f⇒(f._1,f._2.take(10)))
+    
+//    val TOP10EndTime=System.currentTimeMillis();
+//    println("Cost time of TOP3: " + (TOP3EndTime-TOP3startTime) + "ms")
+//    println("Cost time of TOP10: " + (TOP10EndTime-TOP3EndTime) + "ms")
+    
 //    val endTop =getCurrent_time
 //    println("topk用时:"+endTop+"-"+startTop+"="+(endTop-startTop))
+    
     println("topk 结束")
 //    println("result的个数是："+result.count())
-    val dbstartTime = System.currentTimeMillis();
+//    val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
     /*result.collect().foreach(f⇒{
     	println("result:-------------------------------")
       println(f)
       })*/
-    val operationEndTime=System.currentTimeMillis();
-    val operationEveryTime=operationEndTime - dbstartTime
-    println("Cost time of every operation: " + (operationEveryTime) + "ms")
+//    val operationEndTime=System.currentTimeMillis();
+//    val operationEveryTime=operationEndTime - dbstartTime
+//    println("Cost time of every operation: " + (operationEveryTime) + "ms")
 
     //测试不收集会不会执行add操作
     //闭包，没用的
@@ -391,20 +399,21 @@ if(args(0).equals("minute")){
         }
 //        		i =i+ 1
       })
-        		//如果不行再测试
         	dbConnector.finalize()
 
     	    dbConnector=null
 //    	println("内层foreach结束---------------------------")
       
     })
+    result.unpersist()
+    
 //        		println("i:"+i)
 //    println("外层foreachPartition结束---------------------------")
-     val dbendTime = System.currentTimeMillis();
-     val dbEveryTime=dbendTime - dbstartTime
-     println("Cost time of erery db: " + (dbEveryTime) + "ms")
-     println("min result:-------------------------------")
-     return (operationEveryTime,dbEveryTime)
+//     val dbendTime = System.currentTimeMillis();
+//     val dbEveryTime=dbendTime - dbstartTime
+//     println("Cost time of erery db: " + (dbEveryTime) + "ms")
+//     println("min result:-------------------------------")
+//     return (operationEveryTime,dbEveryTime)
 //     result
 //    println("-----------------------------------------------------")
 //    val rdd6=rdd4.sortByKey(false)
@@ -418,7 +427,7 @@ if(args(0).equals("minute")){
 //    val rdd5=rdd6.map(r⇒(r._2._1,r._2._2,r._1))
 //    println("结果是：-------------------------------------------")
 //    rdd5.collect().foreach(println)
-//    (1,1)
+    (1,1)
      }
 
 else if(args(0).equals("hour")){
@@ -462,6 +471,8 @@ else if(args(0).equals("hour")){
       
       })
       }
+//      rdd3.cache
+      rdd3.persist(StorageLevel.MEMORY_AND_DISK)
 //    val rdd4=rdd3.first()
 //    println("rdd4--------------------------------------:"+rdd4)
 //    val end =getCurrent_time
@@ -568,22 +579,23 @@ else if(args(0).equals("hour")){
     	println("c:-------------------------------")
       println(f)
       })*/
-      val TOP3startTime = System.currentTimeMillis();
+   
+//      val TOP3startTime = System.currentTimeMillis();
     val result=c.map(f⇒(f._1,f._2.take(3)))
-     val TOP3EndTime=System.currentTimeMillis();
-    val result10=c.map(f⇒(f._1,f._2.take(10)))
-    val TOP10EndTime=System.currentTimeMillis();
-    println("Cost time of TOP3: " + (TOP3EndTime-TOP3startTime) + "ms")
-    println("Cost time of TOP10: " + (TOP10EndTime-TOP3EndTime) + "ms")
+//     val TOP3EndTime=System.currentTimeMillis();
+//    val result10=c.map(f⇒(f._1,f._2.take(10)))
+//    val TOP10EndTime=System.currentTimeMillis();
+//    println("Cost time of TOP3: " + (TOP3EndTime-TOP3startTime) + "ms")
+//    println("Cost time of TOP10: " + (TOP10EndTime-TOP3EndTime) + "ms")
 //    println("result的个数是："+result.count())
     
     println("topk 结束")
     
-    val dbstartTime = System.currentTimeMillis();
+//    val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
-    val operationEndTime=System.currentTimeMillis();
-    val operationEveryTime=operationEndTime - dbstartTime
-    println("Cost time of every operation: " + (operationEveryTime) + "ms")
+//    val operationEndTime=System.currentTimeMillis();
+//    val operationEveryTime=operationEndTime - dbstartTime
+//    println("Cost time of every operation: " + (operationEveryTime) + "ms")
     //如果直接使用rdd5.top(3),则result不再是rdd，所以直接foreach，未来看是否再使用sc变成rdd
     result.foreachPartition(f⇒{
       
@@ -611,11 +623,14 @@ else if(args(0).equals("hour")){
     	dbConnector.finalize()
     	dbConnector=null
     })
-     val dbendTime = System.currentTimeMillis();
-     val dbEveryTime=dbendTime - dbstartTime
-     println("Cost time of erery db: " + (dbEveryTime) + "ms")
-     println("result:-------------------------------")
-     return (operationEveryTime,dbEveryTime)
+    result.unpersist()
+    rdd3.unpersist()
+//     val dbendTime = System.currentTimeMillis();
+//     val dbEveryTime=dbendTime - dbstartTime
+//     println("Cost time of erery db: " + (dbEveryTime) + "ms")
+//     println("result:-------------------------------")
+//     return (operationEveryTime,dbEveryTime)
+     (1,1)
     }else (1,1)
     }
   
