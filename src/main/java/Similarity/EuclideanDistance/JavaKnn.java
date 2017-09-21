@@ -9,9 +9,12 @@ import static org.bytedeco.javacpp.opencv_flann.FLANN_DIST_L2;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.Arrays;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_flann.Index;
@@ -19,6 +22,9 @@ import org.bytedeco.javacpp.opencv_flann.IndexParams;
 import org.bytedeco.javacpp.opencv_flann.KDTreeIndexParams;
 import org.bytedeco.javacpp.opencv_flann.LshIndexParams;
 import org.bytedeco.javacpp.opencv_flann.SearchParams;
+
+import entities.ReIdAttributesTemp;
+
 
 /**
  * Knn Search using flann in JavaCV
@@ -91,9 +97,11 @@ public class JavaKnn
      * @param k topk
      */
     @SuppressWarnings({ "unused", "deprecation" })
-	public void getKnn(float[] arr1,float[] arr2,int col,int k,JavaKnn javaKnn){
-    	int arr1Row=arr1.length/col;
-    	int arr2Row=arr2.length/col;
+	public List<ReIdAttributesTemp> getKnn(float[] arr1,float[] arr2,int col,int k,JavaKnn javaKnn){
+    	int arr1len=arr1.length;
+    	int arr2len=arr2.length;
+    	int arr1Row=arr1len/col;
+    	int arr2Row=arr2len/col;
     	Mat mat1 = new Mat(arr1Row, col, CV_32FC1);
         final FloatPointer fp1 = new FloatPointer(mat1.data());
         fp1.put(arr1);
@@ -112,32 +120,69 @@ public class JavaKnn
 		System.out.println("Cost time of knn: " + (endTime - startTime) + "ms");
 		
         // Get results.
-       /* Mat indexMat = javaKnn.getIndexMat();
+        Mat indexMat = javaKnn.getIndexMat();
         Mat distsMat = javaKnn.getDistMat();
         //galleryArray中的位置
         IntBuffer indexBuf = indexMat.getIntBuffer();
         //欧式距离的平方
         FloatBuffer distsBuf = distsMat.getFloatBuffer();
 
-        
-        //打印mat
-        FloatBuffer probesMatDistsBuf =mat2.getFloatBuffer();
-        for (int i = 0; i < probesMatDistsBuf.capacity(); i++) {
-				
-        		System.out.println("index:" +",element:" + probesMatDistsBuf.get(i));
-        	
-		}
-        System.out.println("------------------------");
+        List<ReIdAttributesTemp> list=new ArrayList<>();
+       
         //打印索引和距离
-        for (int i = 0; i < mat2.rows()*k; i++) {
-            System.out.println("index:" + indexBuf.get(i)+",element:" + distsBuf.get(i));
+        for(int i=0;i<arr2Row;i++){
+	        for (int j = i*k; j < (i+1)*k; j++) {
+	            System.out.println("被广播出去的index："+i+",总的index:" + indexBuf.get(j)+",距离:" + distsBuf.get(j));
+	            ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
+	            reIdAttributesTemp.setSim(distsBuf.get(j));
+	            reIdAttributesTemp.setFloatArrLineNum1(indexBuf.get(j));
+	            reIdAttributesTemp.setFloatArrLineNum2(i);
+	            list.add(reIdAttributesTemp);
+	        }
         }
-        */
+        
+        System.out.println("------------------------");
+        //打印mat
+        FloatBuffer mat1Buf =mat1.getFloatBuffer();
+        FloatBuffer mat2Buf =mat2.getFloatBuffer();
+        Map<Integer,float[]> map1=new HashMap<>(); 
+        Map<Integer,float[]> map2=new HashMap<>(); 
+        for (int i = 0; i < arr1Row; i++) {
+//        	float[] arr1float=new float[col];
+        	List<Float> arr1list=new ArrayList<>();
+        	for (int j = i*col; j < (i+1)*col; ++j) {
+        		
+        		arr1list.add(mat1Buf.get(j));
+        		System.out.println("总的index:" +i+ ",element:" + mat1Buf.get(j));
+        	}
+        	map1.put(i, ArrayUtils.toPrimitive(arr1list.toArray(new Float[0]), 0.0F));
+        	arr1list=null;
+        }
+        for (int i = 0; i < arr2Row; i++) {
+        	List<Float> arr2list=new ArrayList<>();
+	        for (int j = i*col; j < (i+1)*col; ++j) {
+	        	
+	        	arr2list.add(mat2Buf.get(j));
+	        	System.out.println("被广播出去的index:" +i+ ",element:" + mat2Buf.get(j));
+	        }
+	        map2.put(i,  ArrayUtils.toPrimitive(arr2list.toArray(new Float[0]), 0.0F));
+	        arr2list=null;
+        }
+		for (int i = 0; i < list.size(); i++) {
+			ReIdAttributesTemp reIdAttributesTemp=list.get(i);
+			reIdAttributesTemp.setFloatArr1(map1.get(reIdAttributesTemp.getFloatArrLineNum1()));
+			reIdAttributesTemp.setFloatArr2(map2.get(reIdAttributesTemp.getFloatArrLineNum2()));
+		}
+		for (int i = 0; i < list.size(); i++) {
+			System.out.println("list:"+list.get(i).toString());
+		}
         // Release.
         fp1.close();
         fp2.close();
         fp1.deallocate();
         fp2.deallocate();
+        
+        return list;
     }
     
     
@@ -154,33 +199,42 @@ public class JavaKnn
         						2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 
         						1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
 				        		9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 
-				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f};
+				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+				        		2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
 //        float[] probeArray = new float[1000000*128];
 //        for (int i = 0; i < galleryArray.length; i++) {
 //     	galleryArray[i]=new Random().nextFloat();
 //     	probeArray[i]=new Random().nextFloat();
 //		}
         float[] probeArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,	
-        						1.0f, 2.0f, 3.0f, 4.0f, 6.0f};
+        						1.0f, 2.0f, 3.0f, 4.0f, 6.0f
+        						,1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+        						9.1f, 6.1f, 6.6f, 7.8f, 2.5f};
 //        long orz = startMem - r.freeMemory();
 //        System.out.println(orz);
         JavaKnn javaKnn = new JavaKnn();
-//        javaKnn.getKnn(galleryArray, 5, probeArray, 2, 5, 5, javaKnn);
-        
+        javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn);
+        System.out.println("--------------------------------------------------");
+        test();
         
     }
     
-    public void test(){
+    public static void test(){
     	 // Source data.
 //      float[] galleryArray = new float[100000];
-     float[] galleryArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 
-     						2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 
-     						1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-				        		9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 
-				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f};
+    	 float[] galleryArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 
+					2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 
+					1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+	        		9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 
+	        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+	        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+	        		2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
 //     float[] probeArray = new float[100000];
-     float[] probeArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,	
-     						1.0f, 2.0f, 3.0f, 4.0f, 6.0f};
+    	 float[] probeArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,	
+					1.0f, 2.0f, 3.0f, 4.0f, 6.0f
+					,1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+					9.1f, 6.1f, 6.6f, 7.8f, 2.5f};
      
      /*for (int i = 0; i < galleryArray.length; i++) {
      	galleryArray[i]=new Random().nextFloat();
@@ -188,18 +242,18 @@ public class JavaKnn
 		}*/
     	// Mat data.
         						//条数   //维度
-        Mat galleryMat = new Mat(5, 5, CV_32FC1);
+        Mat galleryMat = new Mat(7, 5, CV_32FC1);
         final FloatPointer galleryMatData = new FloatPointer(galleryMat.data());
         galleryMatData.put(galleryArray);
         						//row //col
-        Mat probesMat = new Mat(2, 5, CV_32FC1);
+        Mat probesMat = new Mat(4, 5, CV_32FC1);
         final FloatPointer probesMatData = new FloatPointer(probesMat.data());
         probesMatData.put(probeArray);
         //不能再次put，put进去的是0
 //        probesMatData.put(probeArray);
         
         // Knn search.
-        int k = 5;
+        int k = 7;
         JavaKnn javaKnn = new JavaKnn();
         javaKnn.init(k, FLANN_DIST_L2);
         long startTime = System.currentTimeMillis();
@@ -226,7 +280,7 @@ public class JavaKnn
 		}*/
         for (int i = 0; i < probesMatDistsBuf.capacity(); i++) {
 				
-        		System.out.println("index:" +",element:" + probesMatDistsBuf.get(i));
+//        		System.out.println("index:" +",element:" + probesMatDistsBuf.get(i));
         	
 		}
         System.out.println("------------------------");

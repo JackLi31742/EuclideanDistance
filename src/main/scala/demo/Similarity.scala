@@ -18,6 +18,7 @@ import Similarity.EuclideanDistance.JavaKnn
 import Similarity.EuclideanDistance.Neo4jConnector
 import entities.ReIdAttributesTemp
 import entities.ReIdAttributesTempRDD
+import java.util.ArrayList
 
 /*class ForDemo {
   case class Point(x: Double, y: Double)
@@ -398,25 +399,29 @@ if(args(0).equals("minute")){
         
         val caRDD=rdd1MapParRDD.cartesian(broadRddMapParRDD)
        val resultRdd= caRDD.mapPartitions(f⇒{
-         var resultMap = Map[IntBuffer,FloatBuffer]()
+//         var resultMap = Map[IntBuffer,FloatBuffer]()
 //         var tuple=new Tuple2[IntBuffer,FloatBuffer]()
+         var list:java.util.List[ReIdAttributesTemp]=new ArrayList;
     	   val javaKnn: JavaKnn= new JavaKnn();
-    	   var indexMat: Mat  =null;
-    	   var distsMat:Mat  =null;
+//    	   var indexMat: Mat  =null;
+//    	   var mat1:Mat  =null;
+//         var mat2:Mat  =null;
+//    	   var distsMat:Mat  =null;
        //galleryArray中的位置
-    	   var indexBuf:IntBuffer=null;
+//    	   var indexBuf:IntBuffer=null;
        //欧式距离的平方
-    	   var distsBuf:FloatBuffer  =null;
+//    	   var distsBuf:FloatBuffer  =null;
           while(f.hasNext){
             var ele=f.next()
-            javaKnn.getKnn(ele._1, ele._2, col, minK, javaKnn)
-           indexMat = javaKnn.getIndexMat();
-          distsMat= javaKnn.getDistMat();
-           indexBuf = indexMat.getIntBuffer();
-           distsBuf= distsMat.getFloatBuffer();
-           resultMap+=(indexBuf→distsBuf)
+            list=javaKnn.getKnn(ele._1, ele._2, col, minK, javaKnn)
+//           indexMat = javaKnn.getIndexMat();
+//          distsMat= javaKnn.getDistMat();
+//           indexBuf = indexMat.getIntBuffer();
+//           distsBuf= distsMat.getFloatBuffer();
+//           resultMap+=(indexBuf→distsBuf)
           }
-          resultMap.toIterator
+          list.asScala.toIterator
+//          resultMap.toIterator
         })
       /*  println("buf1的大小是："+buf1.size)
       buf1.foreach(f⇒{

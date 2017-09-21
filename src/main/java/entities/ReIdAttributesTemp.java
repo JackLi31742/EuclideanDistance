@@ -18,6 +18,7 @@
 package entities;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Map.Entry;
 
 import org.apache.commons.collections4.keyvalue.MultiKey;
@@ -44,14 +45,60 @@ public class ReIdAttributesTemp implements Serializable {
     private Long start;
     //节点之间的相似度
     private double sim;
+    //节点的id
     private String trackletID1;
     private String trackletID2;
+    //节点的float数组
+    private float[] floatArr1;
+    private float[] floatArr2;
+    /**
+     * 总的行号
+     */
+    private int floatArrLineNum1;
+    /**
+     * 被广播出去的行号
+     */
+    private int floatArrLineNum2;
     
     //本来用来保存节点以及相似度的，用了spark之后就不用了
     MultiKeyMap<String,Double>  euclideanDistanceSimilarities;
 
 	
-    public String getTrackletID1() {
+   
+
+	public int getFloatArrLineNum1() {
+		return floatArrLineNum1;
+	}
+
+	public void setFloatArrLineNum1(int floatArrLineNum1) {
+		this.floatArrLineNum1 = floatArrLineNum1;
+	}
+
+	public int getFloatArrLineNum2() {
+		return floatArrLineNum2;
+	}
+
+	public void setFloatArrLineNum2(int floatArrLineNum2) {
+		this.floatArrLineNum2 = floatArrLineNum2;
+	}
+
+	public float[] getFloatArr1() {
+		return floatArr1;
+	}
+
+	public void setFloatArr1(float[] floatArr1) {
+		this.floatArr1 = floatArr1;
+	}
+
+	public float[] getFloatArr2() {
+		return floatArr2;
+	}
+
+	public void setFloatArr2(float[] floatArr2) {
+		this.floatArr2 = floatArr2;
+	}
+
+	public String getTrackletID1() {
 		return trackletID1;
 	}
 
@@ -127,10 +174,11 @@ public class ReIdAttributesTemp implements Serializable {
 		this.euclideanDistanceSimilarities = euclideanDistanceSimilarities;
 	}
 
-	@Override
+	/*@Override
 	public String toString() {
 		return new Gson().toJson(this);
-	}
+	}*/
+	
 	
 	
 	public static void main(String[] args) {
@@ -155,5 +203,13 @@ public class ReIdAttributesTemp implements Serializable {
 		System.out.println(a+" "+b);
 	}
 
+	@Override
+	public String toString() {
+		return "ReIdAttributesTemp [floatArr1=" + Arrays.toString(floatArr1) + ", floatArrLineNum1=" + floatArrLineNum1+ ", floatArr2="
+				+ Arrays.toString(floatArr2)  + ", floatArrLineNum2="
+				+ floatArrLineNum2+",sim=" + sim   + "]";
+	}
+
+	
     
 }
