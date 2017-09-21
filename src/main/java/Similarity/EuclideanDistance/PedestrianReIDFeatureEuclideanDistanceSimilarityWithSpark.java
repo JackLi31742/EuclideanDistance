@@ -17,7 +17,8 @@ import demo.Similarity;
 import entities.Hour;
 import entities.Minute;
 import entities.ReIdAttributesTemp;
-
+import test.matrix;
+import test.MapTest;
 public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implements Serializable
 //extends SparkStreamingApp
 {
@@ -80,7 +81,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		long SparkstartTime = System.currentTimeMillis();
 //		Similarity similarity=null;
 //		similarity=new Similarity();
-		similarity.glom(similarity.listToRdd(list),args);
+//		similarity.glom(similarity.listToRdd(list),args);
+		similarity.glomWithFlann(similarity.listToRdd(list),args);
 		long SparkendTime = System.currentTimeMillis();
 		logger.info("Cost time of spark: " + (SparkendTime - SparkstartTime) + "ms");
 		
@@ -242,10 +244,12 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //		String classpathString=System.getProperty("java.class.path");
 //		System.out.println("classpathString:"+classpathString);
-		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
-		p.init();
-		p.addToContext(args);
-		
+//		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
+//		p.init();
+//		p.addToContext(args);
+		MapTest.MapPartitionsTest();
+//		matrix m=new matrix();
+//		m.testmatrix();
 //		test();
 //		ItemCFtest();
 //		a();

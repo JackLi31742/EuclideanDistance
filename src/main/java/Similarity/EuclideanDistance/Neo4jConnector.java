@@ -1225,7 +1225,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 					"MATCH (a:Hour"
 					+ "{hour:{hour}}"
 					+ ")-[:HAS_MIN]-(b:Minute)-[:INCLUDES_PERSON]-(c:Person{dataType:'track-reid-20170907'})  "
-					+ "return c.trackletID,c.reidFeature,c.camID,c.startTime,b.start order by a.hour;"
+					+ "where c.reidFeature is not null return c.trackletID,c.reidFeature,c.camID,c.startTime,b.start order by a.hour;"
 					,Values.parameters("hour", hour.getHour().longValue())
 					);
 			while (result.hasNext()) {
@@ -1269,7 +1269,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 					"MATCH (a:Minute"
 					+ "{start:{start}}"
 					+ ")-[:INCLUDES_PERSON]-(b:Person{dataType:'track-reid-20170907'})  "
-					+ "return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start;"
+					+ "where b.reidFeature is not null return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start limit 10;"
 					,Values.parameters("start", minute.getStart().longValue())
 					);
 			while (result.hasNext()) {
