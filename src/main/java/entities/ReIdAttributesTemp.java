@@ -45,6 +45,7 @@ public class ReIdAttributesTemp implements Serializable {
     private Long start;
     //节点之间的相似度
     private double sim;
+    
     //节点的id
     private String trackletID1;
     private String trackletID2;
@@ -174,10 +175,10 @@ public class ReIdAttributesTemp implements Serializable {
 		this.euclideanDistanceSimilarities = euclideanDistanceSimilarities;
 	}
 
-	/*@Override
+	@Override
 	public String toString() {
 		return new Gson().toJson(this);
-	}*/
+	}
 	
 	
 	
@@ -203,8 +204,7 @@ public class ReIdAttributesTemp implements Serializable {
 		System.out.println(a+" "+b);
 	}
 
-	@Override
-	public String toString() {
+	public String toString(int a) {
 		return "ReIdAttributesTemp [floatArr1=" + Arrays.toString(floatArr1) + ", floatArrLineNum1=" + floatArrLineNum1+ ", floatArr2="
 				+ Arrays.toString(floatArr2)  + ", floatArrLineNum2="
 				+ floatArrLineNum2+",sim=" + sim   + "]";

@@ -96,12 +96,16 @@ public class JavaKnn
      * @param col 维数
      * @param k topk
      */
-    @SuppressWarnings({ "unused", "deprecation" })
+    @SuppressWarnings({ "deprecation" })
 	public List<ReIdAttributesTemp> getKnn(float[] arr1,float[] arr2,int col,int k,JavaKnn javaKnn){
+    	
     	int arr1len=arr1.length;
     	int arr2len=arr2.length;
+    	System.out.println("arr1len:"+arr1len+",arr2len"+arr2len);
     	int arr1Row=arr1len/col;
     	int arr2Row=arr2len/col;
+    	
+    	//得到mat
     	Mat mat1 = new Mat(arr1Row, col, CV_32FC1);
         final FloatPointer fp1 = new FloatPointer(mat1.data());
         fp1.put(arr1);
@@ -117,7 +121,7 @@ public class JavaKnn
         long startTime = System.currentTimeMillis();
         javaKnn.knnSearch(mat2, mat1);
         long endTime = System.currentTimeMillis();
-		System.out.println("Cost time of knn: " + (endTime - startTime) + "ms");
+		System.out.println("Cost time of ervry knn: " + (endTime - startTime) + "ms");
 		
         // Get results.
         Mat indexMat = javaKnn.getIndexMat();
@@ -126,7 +130,8 @@ public class JavaKnn
         IntBuffer indexBuf = indexMat.getIntBuffer();
         //欧式距离的平方
         FloatBuffer distsBuf = distsMat.getFloatBuffer();
-
+        
+        //保存所有的信息
         List<ReIdAttributesTemp> list=new ArrayList<>();
        
         //打印索引和距离
@@ -142,11 +147,13 @@ public class JavaKnn
         }
         
         System.out.println("------------------------");
+        
         //打印mat
         FloatBuffer mat1Buf =mat1.getFloatBuffer();
         FloatBuffer mat2Buf =mat2.getFloatBuffer();
         Map<Integer,float[]> map1=new HashMap<>(); 
         Map<Integer,float[]> map2=new HashMap<>(); 
+        
         for (int i = 0; i < arr1Row; i++) {
 //        	float[] arr1float=new float[col];
         	List<Float> arr1list=new ArrayList<>();
@@ -168,19 +175,22 @@ public class JavaKnn
 	        map2.put(i,  ArrayUtils.toPrimitive(arr2list.toArray(new Float[0]), 0.0F));
 	        arr2list=null;
         }
+        
 		for (int i = 0; i < list.size(); i++) {
 			ReIdAttributesTemp reIdAttributesTemp=list.get(i);
 			reIdAttributesTemp.setFloatArr1(map1.get(reIdAttributesTemp.getFloatArrLineNum1()));
 			reIdAttributesTemp.setFloatArr2(map2.get(reIdAttributesTemp.getFloatArrLineNum2()));
 		}
+		
 		for (int i = 0; i < list.size(); i++) {
-			System.out.println("list:"+list.get(i).toString());
+			System.out.println("list:"+list.get(i).toString(1));
 		}
+		
         // Release.
-        fp1.close();
-        fp2.close();
-        fp1.deallocate();
-        fp2.deallocate();
+//        fp1.close();
+//        fp2.close();
+//        fp1.deallocate();
+//        fp2.deallocate();
         
         return list;
     }
@@ -213,10 +223,17 @@ public class JavaKnn
         						9.1f, 6.1f, 6.6f, 7.8f, 2.5f};
 //        long orz = startMem - r.freeMemory();
 //        System.out.println(orz);
+        List<ReIdAttributesTemp> list= java.util.Collections.synchronizedList(new ArrayList<ReIdAttributesTemp>());
         JavaKnn javaKnn = new JavaKnn();
-        javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn);
-        System.out.println("--------------------------------------------------");
-        test();
+        list=javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn);
+        System.out.println("-------------------main-------------------------------");
+//        test();
+        Thread1 mTh1=new Thread1("A");  
+        Thread1 mTh2=new Thread1("B");  
+        Thread1 mTh3=new Thread1("C");  
+        mTh1.start();  
+        mTh2.start(); 
+        mTh3.start(); 
         
     }
     
@@ -298,4 +315,32 @@ public class JavaKnn
         probesMatData.deallocate();
 //        System.out.println("=== DONE ===");
     }
+}
+
+class Thread1 extends Thread {
+	private String name;
+
+	public Thread1(String name) {
+		this.name = name;
+	}
+
+	public void run() {
+		for (int i = 0; i < 5; i++) {
+			try {
+				float[] galleryArray = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 1.0f, 2.0f, 3.0f,
+						4.0f, 6.0f, 9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 1.0f, 2.0f, 3.0f, 4.0f, 6.0f, 1.0f, 2.0f, 3.0f, 4.0f,
+						6.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f };
+				float[] probeArray = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 1.0f, 2.0f, 3.0f, 4.0f, 6.0f, 1.0f, 2.0f, 3.0f,
+						4.0f, 6.0f, 9.1f, 6.1f, 6.6f, 7.8f, 2.5f };
+				List<ReIdAttributesTemp> list= java.util.Collections.synchronizedList(new ArrayList<ReIdAttributesTemp>());
+		        JavaKnn javaKnn = new JavaKnn();
+		        list=javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn);
+				System.out.println("-------------------"+name+"-------------------------------");
+				System.out.println("thread:"+list);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
 }

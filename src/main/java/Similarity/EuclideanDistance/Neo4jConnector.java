@@ -1269,7 +1269,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 					"MATCH (a:Minute"
 					+ "{start:{start}}"
 					+ ")-[:INCLUDES_PERSON]-(b:Person{dataType:'track-reid-20170907'})  "
-					+ "where b.reidFeature is not null return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start limit 10;"
+					+ "where b.reidFeature is not null return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start;"
 					,Values.parameters("start", minute.getStart().longValue())
 					);
 			while (result.hasNext()) {

@@ -1,24 +1,17 @@
 package Similarity.EuclideanDistance;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
-
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Session;
 
 import Similarity.EuclideanDistance.util.ConsoleLogger;
 import Similarity.EuclideanDistance.util.Logger;
 import Similarity.EuclideanDistance.util.SerializationHelper;
 import Similarity.EuclideanDistance.util.SingletonUtil;
 import demo.Similarity;
+import demo.Similarity2;
 import entities.Hour;
 import entities.Minute;
 import entities.ReIdAttributesTemp;
-import test.matrix;
-import test.MapTest;
 public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implements Serializable
 //extends SparkStreamingApp
 {
@@ -31,6 +24,7 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 	public GraphDatabaseConnector dbConnector=null;
 	public SingletonUtil<GraphDatabaseConnector> dbConnSingleton=null;
 	Similarity similarity=null;
+	Similarity2 similarity2=null;
 //	public final Driver driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
 //            AuthTokens.basic("neo4j", "casia@1234"));
 //	public final Session session = driver.session();
@@ -40,7 +34,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //		dbConnSingleton=new SingletonUtil<>(Neo4jConnector::new, Neo4jConnector.class);
 //		dbConnector=dbConnSingleton.getInst();
 		dbConnector=new Neo4jConnector();
-		similarity=new Similarity();
+//		similarity=new Similarity();
+		similarity2=new Similarity2();
 	//	final Logger logger = loggerSingleton.getInst();
 	}
 //	static SparkConf conf=new SparkConf().setMaster("spark://rtask-nod8:7077").setAppName("Euclidean-Distance");
@@ -81,8 +76,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		long SparkstartTime = System.currentTimeMillis();
 //		Similarity similarity=null;
 //		similarity=new Similarity();
-//		similarity.glom(similarity.listToRdd(list),args);
-		similarity.glomWithFlann(similarity.listToRdd(list),args);
+		similarity2.glom(similarity2.listToRdd(list),args);
+//		similarity.glomWithFlann(similarity.listToRdd(list),args);
 		long SparkendTime = System.currentTimeMillis();
 		logger.info("Cost time of spark: " + (SparkendTime - SparkstartTime) + "ms");
 		
@@ -244,10 +239,10 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //		String classpathString=System.getProperty("java.class.path");
 //		System.out.println("classpathString:"+classpathString);
-//		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
-//		p.init();
-//		p.addToContext(args);
-		MapTest.MapPartitionsTest();
+		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
+		p.init();
+		p.addToContext(args);
+//		MapTest.MapPartitionsTest();
 //		matrix m=new matrix();
 //		m.testmatrix();
 //		test();
@@ -280,11 +275,7 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 						List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(minList.get(i));
 		
 //			List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(new Minute());
-			/*for (int i = 0; i <list.size(); i++) {
-				System.out.println("out:--------------------------------");
-				System.out.println(list.get(i).toString());
-				
-			}*/
+			
 		/*JavaRDD<ReIdAttributesTemp> javaRDD = sc.parallelize(list);
 		JavaRDD<String> logData1 = javaRDD.map(new Function<ReIdAttributesTemp, String>() {
 
@@ -320,6 +311,11 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 			//				getSim(outlist);
 			//		getSim(list,sc);
 								try {
+									/*for (int j = 0; j <list.size(); j++) {
+										System.out.println("out:--------------------------------");
+										System.out.println(list.get(j).toString());
+										
+									}*/
 									getSim(list,args);
 								} catch (Exception e) {
 									// TODO Auto-generated catch block
