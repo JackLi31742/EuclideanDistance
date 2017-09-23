@@ -499,7 +499,7 @@ if(args(0).equals("minute")){
           synchronized {
             var javaKnn: JavaKnn = new JavaKnn();
             try {
-              list = javaKnn.getKnn(f._1, f._2, col, minK + 1, javaKnn)
+//              list = javaKnn.getKnn(f._1, f._2, col, minK + 1, javaKnn)
             } catch {
               case e: Exception => println("exception caught: " + e);
             } finally {

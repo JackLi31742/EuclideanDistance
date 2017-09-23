@@ -51,7 +51,7 @@ class Similarity extends Serializable{
 		val sc=new SparkContext(conf)
   val partition=3
   val col=128
-  val minK=3
+  val minK=2
   val hourK=10
 ////  @transient
 //  val driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
@@ -108,7 +108,7 @@ class Similarity extends Serializable{
     println("传入的list大小为："+list.size())
     val rdd=sc.parallelize(list.asScala)
     println("rdd的partitions的大小是:"+rdd.partitions.size)
-    return (rdd)
+    return rdd
   }
   
   //使用flann
@@ -146,16 +146,16 @@ class Similarity extends Serializable{
     var rddArr=rddGlom.collect()
     for(i <- 0 until rddArr.length){
       var arr=rddArr(i)
-      if(arr.length>0){
+          if(arr.length>0){
           val broadcastVar = sc.broadcast(arr)
 //          var broadcastRdd=sc.parallelize(broadcastVar.value)
 //          println("broadcastRdd的partitions的大小是:"+broadcastRdd.partitions.size)
           everyOneNeedEuDisWithFlann(rdd, broadcastVar, args)
 
-          println(i + "次-----------------------------------结束")
           broadcastVar.unpersist()
 //          broadcastRdd.unpersist()
-      }
+          }
+      println(i + "次-----------------------------------结束")
     }
     		
 //    		rdd.unpersist()
@@ -291,8 +291,9 @@ class Similarity extends Serializable{
     
 if(args(0).equals("minute")){
   
+    println("rdd的大小是:"+rdd.count())
     rdd.collect().foreach(f ⇒ {
-        println("rddWithIndex:-------------------------------")
+        println("rdd:-------------------------------")
         println(f)
     })
     val rdd1 = rdd.map(r ⇒(r.getTrackletID,r.getFeatureVector))
@@ -374,27 +375,33 @@ if(args(0).equals("minute")){
       })
 
       val rdd1MapParRDD = rdd1.mapPartitions(f ⇒ {
-        var buf1 = scala.collection.mutable.ArrayBuffer.empty[Float]
+    	  var buf1 = scala.collection.mutable.ArrayBuffer.empty[String]
+        var buf2 = scala.collection.mutable.ArrayBuffer.empty[Float]
         //    	 var resultMap = Map[String,Array[Float]]()
         //    	 var result = List[Array[Float]]()
-        var result = scala.collection.mutable.ArrayBuffer.empty[Array[Float]]
+//        var result = scala.collection.mutable.ArrayBuffer.empty[Array[Float]]
+        var result2 = scala.collection.mutable.ArrayBuffer.empty[Tuple2[Array[String],Array[Float]]]
         //        f.map(f⇒{
         while (f.hasNext) {
-          buf1.appendAll(f.next()._2)
+        	buf1.+=(f.next()._1)
+          buf2.appendAll(f.next()._2)
         }
         //        })
-        val arr = buf1.toArray
+    	  val arr1=buf1.toArray
+        val arr2 = buf2.toArray
+        
         //        arr.iterator
         //        result.::(arr).iterator
-        result.+=(arr).iterator
+//        result.+=(arr2).iterator
+        result2.+=(Tuple2(arr1,arr2)).iterator
         //        arr.toIterator
       })
-      //Partitions的数量
+      //大小是Partitions的数量
       println("rdd1MapParRDD的大小是：" + rdd1MapParRDD.count())
       rdd1MapParRDD.collect.foreach(f ⇒ {
         println("rdd1MapParRDD---------------------")
-        for (i <- 0 until f.length) {
-          print(f(i) + ",")
+        for (i <- 0 until f._1.length) {
+          print(f._1(i) + ","+f._2(i))
         }
         println()
       })
@@ -425,30 +432,32 @@ if(args(0).equals("minute")){
         println()
       })
 */
-      val caRDD = rdd1MapParRDD.cartesian(broadRdd).map(f⇒(f._1,f._2._2))
+      //.map(f⇒(f._1,f._2._2))
+      val caRDD = rdd1MapParRDD.cartesian(broadRdd)
       println("caRDD的大小是：" + caRDD.count())
        caRDD.collect.foreach(f ⇒ {
         println("caRDD---------------------")
-        println(Arrays.toString(f._1)+"---：：：----"+Arrays.toString(f._2))
+        println(f._1._1.length+"---：：：----"+f._2._1)
       })
 
       val resultRdd = caRDD.map(f ⇒ {
-        //      var tuple=new Tuple2[IntBuffer,FloatBuffer]()
-//    	  var list: java.util.List[ReIdAttributesTemp] = new ArrayList
-    	   var list= java.util.Collections.synchronizedList(new ArrayList[ReIdAttributesTemp]);
+//              var tuple=new Tuple2[[IntBuffer],[FloatBuffer]]
+    	  var list: java.util.List[ReIdAttributesTemp] = new ArrayList
+//    	  var tuple=(f._1._1,f._1._2,f._2._1,f._2._2)
+//    	   var list= java.util.Collections.synchronizedList(new ArrayList[ReIdAttributesTemp]);
         //        while (f.hasNext) {
         //          var ele = f.next()
-        if (f._1.length > 0 && f._2.length > 0) {
-          synchronized {
+        if (f._1._2.length > 0 && f._2._2.length > 0) {
+//          synchronized {
             var javaKnn: JavaKnn = new JavaKnn();
             try {
-              list = javaKnn.getKnn(f._1, f._2, col, minK + 1, javaKnn)
+              list = javaKnn.getKnn(f, col, minK + 1, javaKnn)
             } catch {
               case e: Exception => println("exception caught: " + e);
             } finally {
 
               javaKnn = null
-            }
+//            }
           }
         }
 //        }
@@ -456,51 +465,94 @@ if(args(0).equals("minute")){
           list
       })
       println("resultRdd的大小是：" + resultRdd.count())
-      val rdd3 = resultRdd.filter(f ⇒ f.size() != 0).flatMap(f ⇒ f.asScala).filter(f ⇒ f != null)
-       println("rdd3的大小是：" + rdd3.count())
-      rdd3.collect.foreach(f ⇒ {
-        println("rdd3---------------------")
-        //        for(i <- 0 until f.size()){
-        if(f!=null){
-          if(f.getFloatArr1()!=null&&f.getFloatArr2()!=null){
-        println("arr1:" + f.getFloatArr1()(0) + ",arr1Num:" + f.getFloatArrLineNum1
-          + ",arr2:" + f.getFloatArr2()(0) + ",arr2Num:" + f.getFloatArrLineNum2 + ",sim:" + f.getSim)
-        //        }
-      }}})
-      val rdd2 = rdd3.map(f ⇒ (f.getFloatArr1, f.getFloatArr2, f.getSim)).filter(f ⇒ (f._3 != 0.0))
+      resultRdd.collect.foreach(f ⇒ {
+        println("list的大小是：" + f.size())
+        println("resultRdd---------------------")
+        for (i <- 0 until f.size()) {
+          println(f.get(i).toString(1))
+
+        }
+        println("list 的for循环结束")
+      })
+      val resultFilterRdd = resultRdd.filter(f ⇒ f.size() != 0).flatMap(f ⇒ f.asScala).filter(f ⇒ f != null)
+      println("resultFilterRdd的大小是：" + resultFilterRdd.count())
+     /* resultFilterRdd.collect.foreach(f ⇒ {
+        if (f != null) {
+          println("resultFilterRdd---------------------")
+          if (f.getFloatArr1() != null && f.getFloatArr2() != null) {
+            println("arr1:" + f.getFloatArr1()(0) + ",arr1Num:" + f.getFloatArrLineNum1
+              + ",arr2:" + f.getFloatArr2()(0) + ",arr2Num:" + f.getFloatArrLineNum2 + ",sim:" + f.getSim)
+          }
+        }
+      })*/
+      /*val rdd2 = resultFilterRdd.map(f ⇒ (f.getFloatArr1, f.getFloatArr2, f.getSim)).filter(f ⇒ (f._3 != 0.0))
       println("rdd2的大小是：" + rdd2.count())
       rdd2.collect.foreach(f ⇒ {
         println("rdd2---------------------")
-        println(Arrays.toString(f._1) + "---：：：----" + Arrays.toString(f._2))
+        println(f._1(0) + "---：：：----" + f._2(0) + "," + f._3)
+      })*/
+      
+      val test=resultFilterRdd.map(f⇒(f.getTrackletID1,f.getTrackletID2,f.getSim))
+      println("test的大小是：" + test.count())
+      test.collect.foreach(f ⇒ {
+        println("test---------------------")
+        println(f)
       })
       
-/*      val rdd3 = rdd2.cartesian(rdd1)
-//      println("rdd3的大小是：" + rdd3.count())
-rdd3.collect.foreach(f ⇒ {
+      /*
+       * 在javaknn里做了保存
+      val finalRdd=test.map(f⇒{
+        var result = scala.collection.mutable.ArrayBuffer.empty[Tuple3[String,String,Double]]
+        for(i <- 0 until f._1.length){
+          println("finalRdd-----------------------")
+          println(f._1(i)+","+f._2+","+f._3)
+          result.+=:(Tuple3(f._1(i),f._2,f._3))
+        }
+        result
+      })
+      val result=finalRdd.flatMap(f⇒f)
+      println("result的大小是：" + result.count())
+      result.collect.foreach(f ⇒ {
+        println("result---------------------")
+        println(f)
+      })
+      */
+/*
+      val rdd3 = rdd2.cartesian(rdd1)
+      println("rdd3的大小是：" + rdd3.count())
+      rdd3.collect.foreach(f ⇒ {
         println("rdd3---------------------")
-        println(Arrays.toString(f._1._1)+"---：：：----"+f._2._1)
+        println(Arrays.toString(f._1._1) + "---：：：----" + f._2._1)
       })
-      
+
       val rdd4 = rdd2.cartesian(broadRdd)
-//      println("rdd4的大小是：" + rdd4.count())
-rdd4.collect.foreach(f ⇒ {
+      println("rdd4的大小是：" + rdd4.count())
+      rdd4.collect.foreach(f ⇒ {
         println("rdd4---------------------")
-        println(Arrays.toString(f._1._1)+"---：：：----"+f._2._1)
+        println(Arrays.toString(f._1._1) + "---：：：----" + f._2._1)
       })
-      
+
       val rdd5 = rdd3.filter(f ⇒ (Arrays.equals(f._1._1, f._2._2)))
-//      println("rdd5的大小是：" + rdd5.count())
-rdd5.collect.foreach(f ⇒ {
+      println("rdd5的大小是：" + rdd5.count())
+      rdd5.collect.foreach(f ⇒ {
         println("rdd5---------------------")
-        println(Arrays.toString(f._1._1)+"---：：：----"+f._2._1)
+        println(f._1._1(0) +","+ f._1._2(0)+"---：：：----" + f._2._1)
       })
-      
-      val rdd6 = rdd4.filter(f ⇒ (Arrays.equals(f._1._2, f._2._2)))
-//      println("rdd6的大小是：" + rdd6.count())
+
+      val rdd6 = rdd3.filter(f ⇒ (Arrays.equals(f._1._2, f._2._2)))
+      println("rdd6的大小是：" + rdd6.count())
       rdd6.collect.foreach(f ⇒ {
         println("rdd6---------------------")
-        println(Arrays.toString(f._1._1)+"---：：：----"+f._2._1)
-      })*/
+        println(f._1._1(0)+","+ f._1._2(0) + "---：：：----" + f._2._1)
+      })
+      
+      val rdd7=rdd5.map(f⇒(f._2._1,f._1._3))
+      println("rdd7的大小是：" + rdd7.count())
+      val rdd8=rdd6.map(f⇒(f._2._1))
+      println("rdd8的大小是：" + rdd8.count())
+      val rdd9=rdd7.zip(rdd8).map(f⇒(f._1._1,f._2,f._1._2))
+      println("rdd9的大小是：" + rdd9.count())
+      */
       /*  println("buf1的大小是："+buf1.size)
       buf1.foreach(f⇒{
         println("buf1---------------------")

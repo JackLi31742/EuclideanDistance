@@ -21,11 +21,10 @@ import org.bytedeco.javacpp.opencv_flann.Index;
 import org.bytedeco.javacpp.opencv_flann.IndexParams;
 import org.bytedeco.javacpp.opencv_flann.KDTreeIndexParams;
 import org.bytedeco.javacpp.opencv_flann.LshIndexParams;
-import org.bytedeco.javacpp.opencv_flann.SearchParams;
 
 import entities.ReIdAttributesTemp;
-
-
+import scala.Tuple4;
+import scala.Tuple2;
 /**
  * Knn Search using flann in JavaCV
  *
@@ -76,7 +75,7 @@ public class JavaKnn
         flannIndex.build(gallery, indexParams, method);
 //        flannIndex.knnSearch(probes, indexMat, distMat, k, searchParams);
         flannIndex.knnSearch(probes, indexMat, distMat, k);
-        System.out.println("knnSearch test");
+//        System.out.println("knnSearch test");
     }
 
     // Get knn results
@@ -199,6 +198,119 @@ public class JavaKnn
     }
     
     
+    @SuppressWarnings({ "deprecation" })
+	public List<ReIdAttributesTemp> getKnn(Tuple2<Tuple2<String[], float[]>, Tuple2<String, float[]>> tuple
+			,int col,int k,JavaKnn javaKnn){
+    	float[] arr1=tuple._1()._2();
+    	float[] arr2=tuple._2()._2();
+    	String[] trackletID1s=tuple._1()._1();
+    	int arr1len=arr1.length;
+    	int arr2len=arr2.length;
+    	System.out.println("arr1len:"+arr1len+",arr2len"+arr2len);
+    	int arr1Row=arr1len/col;
+    	int arr2Row=arr2len/col;
+    	System.out.println("arr1Row:"+arr1Row+",arr2Row"+arr2Row+",trackletID1s的大小是："+trackletID1s.length);
+    	
+    	//得到mat
+    	Mat mat1 = new Mat(arr1Row, col, CV_32FC1);
+        final FloatPointer fp1 = new FloatPointer(mat1.data());
+        fp1.put(arr1);
+        						//row //col
+        Mat mat2 = new Mat(arr2Row, col, CV_32FC1);
+        final FloatPointer fp2 = new FloatPointer(mat2.data());
+        fp2.put(arr2);
+        
+        // Knn search.
+//        int k = 5;
+//        JavaKnn javaKnn = new JavaKnn();
+        javaKnn.init(k, FLANN_DIST_L2);
+        long startTime = System.currentTimeMillis();
+        javaKnn.knnSearch(mat2, mat1);
+        long endTime = System.currentTimeMillis();
+		System.out.println("Cost time of ervry knn: " + (endTime - startTime) + "ms");
+		
+        // Get results.
+        Mat indexMat = javaKnn.getIndexMat();
+        Mat distsMat = javaKnn.getDistMat();
+        //galleryArray中的位置
+        IntBuffer indexBuf = indexMat.getIntBuffer();
+        //欧式距离的平方
+        FloatBuffer distsBuf = distsMat.getFloatBuffer();
+        
+        //保存所有的信息
+        List<ReIdAttributesTemp> list=new ArrayList<>();
+       
+        //打印索引和距离
+        for(int i=0;i<arr2Row;i++){
+	        for (int j = i*k; j < (i+1)*k; j++) {
+	            System.out.println("被广播出去的index："+i+",总的index:" + indexBuf.get(j)+",距离:" + distsBuf.get(j));
+	            ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
+	            reIdAttributesTemp.setSim(distsBuf.get(j));
+	            reIdAttributesTemp.setFloatArrLineNum1(indexBuf.get(j));
+	            reIdAttributesTemp.setFloatArrLineNum2(i);
+	            list.add(reIdAttributesTemp);
+	        }
+        }
+        
+        System.out.println("------------------------");
+        
+        //打印mat,并保存
+        FloatBuffer mat1Buf =mat1.getFloatBuffer();
+        FloatBuffer mat2Buf =mat2.getFloatBuffer();
+        Map<Integer,float[]> map1=new HashMap<>(); 
+        Map<Integer,String> map1id=new HashMap<>(); 
+        Map<Integer,float[]> map2=new HashMap<>(); 
+        
+        for (int i = 0; i < arr1Row; i++) {
+//        	float[] arr1float=new float[col];
+        	List<Float> arr1list=new ArrayList<>();
+        	for (int j = i*col; j < (i+1)*col; ++j) {
+        		
+        		arr1list.add(mat1Buf.get(j));
+        		System.out.println("总的index:" +i+ ",element:" + mat1Buf.get(j));
+        	}
+        	map1.put(i, ArrayUtils.toPrimitive(arr1list.toArray(new Float[0]), 0.0F));
+        	arr1list=null;
+        }
+        //保存总的id
+        for (int j = 0; j < trackletID1s.length; j++) {
+        	map1id.put(j, trackletID1s[j]);
+        }
+        
+        for (int i = 0; i < arr2Row; i++) {
+        	List<Float> arr2list=new ArrayList<>();
+	        for (int j = i*col; j < (i+1)*col; ++j) {
+	        	
+	        	arr2list.add(mat2Buf.get(j));
+	        	System.out.println("被广播出去的index:" +i+ ",element:" + mat2Buf.get(j));
+	        }
+	        map2.put(i,  ArrayUtils.toPrimitive(arr2list.toArray(new Float[0]), 0.0F));
+	        arr2list=null;
+        }
+        
+		for (int i = 0; i < list.size(); i++) {
+			ReIdAttributesTemp reIdAttributesTemp=list.get(i);
+			reIdAttributesTemp.setFloatArr1(map1.get(reIdAttributesTemp.getFloatArrLineNum1()));
+			reIdAttributesTemp.setFloatArr2(map2.get(reIdAttributesTemp.getFloatArrLineNum2()));
+//			reIdAttributesTemp.setTrackletID1s(tuple._1()._1());
+			reIdAttributesTemp.setTrackletID2(tuple._2()._1());
+			reIdAttributesTemp.setTrackletID1(map1id.get(reIdAttributesTemp.getFloatArrLineNum1()));
+		}
+		
+		for (int i = 0; i < list.size(); i++) {
+			System.out.println("list:"+list.get(i).toString(1));
+		}
+		
+        // Release.
+        fp1.close();
+        fp2.close();
+//        fp1.deallocate();
+//        fp2.deallocate();
+        
+        return list;
+    }
+    
+    
     // Main function.
     @SuppressWarnings("deprecation")
 	public static void main( String[] args )
@@ -209,12 +321,12 @@ public class JavaKnn
         // Source data.
 //         float[] galleryArray = new float[1000000*128];
         float[] galleryArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f 
-//        						,2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 
-//        						1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-//				        		9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 
-//				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-//				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-//				        		2.0f, 3.0f, 4.0f, 5.0f, 6.0f
+        						,2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 
+        						1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+				        		9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 
+				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+				        		2.0f, 3.0f, 4.0f, 5.0f, 6.0f
 				        		};
 //        float[] probeArray = new float[1000000*128];
 //        for (int i = 0; i < galleryArray.length; i++) {
@@ -222,15 +334,15 @@ public class JavaKnn
 //     	probeArray[i]=new Random().nextFloat();
 //		}
         float[] probeArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f
-//        						,	1.0f, 2.0f, 3.0f, 4.0f, 6.0f
-//        						,1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-//        						9.1f, 6.1f, 6.6f, 7.8f, 2.5f
+        						,	1.0f, 2.0f, 3.0f, 4.0f, 6.0f
+        						,1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+        						9.1f, 6.1f, 6.6f, 7.8f, 2.5f
         						};
 //        long orz = startMem - r.freeMemory();
 //        System.out.println(orz);
         List<ReIdAttributesTemp> list= java.util.Collections.synchronizedList(new ArrayList<ReIdAttributesTemp>());
         JavaKnn javaKnn = new JavaKnn();
-        list=javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn);
+//        list=javaKnn.getKnn(galleryArray, probeArray, 5, 9, javaKnn,list);
         System.out.println("-------------------main-------------------------------");
 //        test();
         /*Thread1 mTh1=new Thread1("A");  
@@ -339,7 +451,7 @@ class Thread1 extends Thread {
 						4.0f, 6.0f, 9.1f, 6.1f, 6.6f, 7.8f, 2.5f };
 				List<ReIdAttributesTemp> list= java.util.Collections.synchronizedList(new ArrayList<ReIdAttributesTemp>());
 		        JavaKnn javaKnn = new JavaKnn();
-		        list=javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn);
+//		        list=javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn,list);
 				System.out.println("-------------------"+name+"-------------------------------");
 				System.out.println("thread:"+list);
 			} catch (Exception e) {

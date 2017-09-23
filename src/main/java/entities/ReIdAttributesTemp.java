@@ -53,19 +53,32 @@ public class ReIdAttributesTemp implements Serializable {
     private float[] floatArr1;
     private float[] floatArr2;
     /**
-     * 总的行号
+     * 每个partition中总的行号
      */
     private int floatArrLineNum1;
     /**
-     * 被广播出去的行号
+     * 每个partition中被广播出去的行号
      */
     private int floatArrLineNum2;
+    
+    /**
+     * 每个partition中总的ids
+     */
+    private String[] trackletID1s;
     
     //本来用来保存节点以及相似度的，用了spark之后就不用了
     MultiKeyMap<String,Double>  euclideanDistanceSimilarities;
 
 	
    
+
+	public String[] getTrackletID1s() {
+		return trackletID1s;
+	}
+
+	public void setTrackletID1s(String[] trackletID1s) {
+		this.trackletID1s = trackletID1s;
+	}
 
 	public int getFloatArrLineNum1() {
 		return floatArrLineNum1;
@@ -205,11 +218,24 @@ public class ReIdAttributesTemp implements Serializable {
 	}
 
 	public String toString(int a) {
-		return "ReIdAttributesTemp [floatArr1=" + Arrays.toString(floatArr1) + ", floatArrLineNum1=" + floatArrLineNum1+ ", floatArr2="
-				+ Arrays.toString(floatArr2)  + ", floatArrLineNum2="
-				+ floatArrLineNum2+",sim=" + sim   + "]";
+		return "ReIdAttributesTemp [floatArr1="+floatArr1[0]+",floatArr1的大小是：" + floatArr1.length+ ", floatArrLineNum1=" + floatArrLineNum1+ ", floatArr2="
+				+ floatArr2[0]+",floatArr2的大小是："+floatArr2.length  + ", floatArrLineNum2="
+				+ floatArrLineNum2+", trackletID1="
+						+ trackletID1 +", trackletID2=" + trackletID2 +",sim=" + sim   + "]";
 	}
 
+	/*@Override
+	public String toString() {
+		return "ReIdAttributesTemp [camID=" + camID + ", trackletID=" + trackletID + ", startTime=" + startTime
+				+ ", featureVector=" + Arrays.toString(featureVector) + ", start=" + start + ", sim=" + sim
+				+ ", trackletID1=" + trackletID1 + ", trackletID2=" + trackletID2 + ", floatArr1="
+				+ Arrays.toString(floatArr1) + ", floatArr2=" + Arrays.toString(floatArr2) + ", floatArrLineNum1="
+				+ floatArrLineNum1 + ", floatArrLineNum2=" + floatArrLineNum2 + ", trackletID1s="
+				+ Arrays.toString(trackletID1s) + ", euclideanDistanceSimilarities=" + euclideanDistanceSimilarities
+				+ "]";
+	}
+*/
+	
 	
     
 }
