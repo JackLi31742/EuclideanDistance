@@ -34,8 +34,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //		dbConnSingleton=new SingletonUtil<>(Neo4jConnector::new, Neo4jConnector.class);
 //		dbConnector=dbConnSingleton.getInst();
 		dbConnector=new Neo4jConnector();
-//		similarity=new Similarity();
-		similarity2=new Similarity2();
+		similarity=new Similarity();
+//		similarity2=new Similarity2();
 	//	final Logger logger = loggerSingleton.getInst();
 	}
 //	static SparkConf conf=new SparkConf().setMaster("spark://rtask-nod8:7077").setAppName("Euclidean-Distance");
@@ -76,8 +76,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		long SparkstartTime = System.currentTimeMillis();
 //		Similarity similarity=null;
 //		similarity=new Similarity();
-		similarity2.glom(similarity2.listToRdd(list),args);
-//		similarity.glomWithFlann(similarity.listToRdd(list),args);
+//		similarity2.glom(similarity2.listToRdd(list),args);
+		similarity.glomWithFlann(similarity.listToRdd(list),args);
 		long SparkendTime = System.currentTimeMillis();
 		logger.info("Cost time of spark: " + (SparkendTime - SparkstartTime) + "ms");
 		

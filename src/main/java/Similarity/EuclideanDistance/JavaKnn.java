@@ -205,22 +205,24 @@ public class JavaKnn
 //    	long startMem = r.freeMemory(); // 开始时的剩余内存  
         // Source data.
 //         float[] galleryArray = new float[1000000*128];
-        float[] galleryArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 
-        						2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 
-        						1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-				        		9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 
-				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-				        		2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+        float[] galleryArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f 
+//        						,2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 
+//        						1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+//				        		9.1f, 6.1f, 6.6f, 7.8f, 2.5f, 
+//				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+//				        		1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+//				        		2.0f, 3.0f, 4.0f, 5.0f, 6.0f
+				        		};
 //        float[] probeArray = new float[1000000*128];
 //        for (int i = 0; i < galleryArray.length; i++) {
 //     	galleryArray[i]=new Random().nextFloat();
 //     	probeArray[i]=new Random().nextFloat();
 //		}
-        float[] probeArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,	
-        						1.0f, 2.0f, 3.0f, 4.0f, 6.0f
-        						,1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
-        						9.1f, 6.1f, 6.6f, 7.8f, 2.5f};
+        float[] probeArray = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f
+//        						,	1.0f, 2.0f, 3.0f, 4.0f, 6.0f
+//        						,1.0f, 2.0f, 3.0f, 4.0f, 6.0f,
+//        						9.1f, 6.1f, 6.6f, 7.8f, 2.5f
+        						};
 //        long orz = startMem - r.freeMemory();
 //        System.out.println(orz);
         List<ReIdAttributesTemp> list= java.util.Collections.synchronizedList(new ArrayList<ReIdAttributesTemp>());
@@ -228,12 +230,12 @@ public class JavaKnn
         list=javaKnn.getKnn(galleryArray, probeArray, 5, 7, javaKnn);
         System.out.println("-------------------main-------------------------------");
 //        test();
-        Thread1 mTh1=new Thread1("A");  
+        /*Thread1 mTh1=new Thread1("A");  
         Thread1 mTh2=new Thread1("B");  
         Thread1 mTh3=new Thread1("C");  
         mTh1.start();  
         mTh2.start(); 
-        mTh3.start(); 
+        mTh3.start();*/ 
         
     }
     

@@ -462,10 +462,11 @@ if(args(0).equals("minute")){
         println("rdd3---------------------")
         //        for(i <- 0 until f.size()){
         if(f!=null){
+          if(f.getFloatArr1()!=null&&f.getFloatArr2()!=null){
         println("arr1:" + f.getFloatArr1()(0) + ",arr1Num:" + f.getFloatArrLineNum1
           + ",arr2:" + f.getFloatArr2()(0) + ",arr2Num:" + f.getFloatArrLineNum2 + ",sim:" + f.getSim)
         //        }
-      }})
+      }}})
       val rdd2 = rdd3.map(f ⇒ (f.getFloatArr1, f.getFloatArr2, f.getSim)).filter(f ⇒ (f._3 != 0.0))
       println("rdd2的大小是：" + rdd2.count())
       rdd2.collect.foreach(f ⇒ {
