@@ -40,7 +40,7 @@ public class JavaKnn
 	
     private Index flannIndex = null;
     private IndexParams indexParams = null;
-    private SearchParams searchParams = null;
+//    private SearchParams searchParams = null;
     private Mat indexMat, distMat;
     
     
@@ -62,7 +62,8 @@ public class JavaKnn
             System.out.println("Bad method, use KD Tree instead!");
             indexParams = new KDTreeIndexParams(4);
         }
-        searchParams = new SearchParams(64, 0, true); // maximum number of leafs checked.
+//        searchParams = new SearchParams(128, 0, true); // maximum number of leafs checked.
+//        searchParams = new SearchParams(); // maximum number of leafs checked.
     }
 
     // Knn search.
@@ -73,7 +74,9 @@ public class JavaKnn
         // find nearest neighbors using FLANN
         // TODO: If it can be built only once?
         flannIndex.build(gallery, indexParams, method);
-        flannIndex.knnSearch(probes, indexMat, distMat, k, searchParams);
+//        flannIndex.knnSearch(probes, indexMat, distMat, k, searchParams);
+        flannIndex.knnSearch(probes, indexMat, distMat, k);
+        System.out.println("knnSearch test");
     }
 
     // Get knn results
