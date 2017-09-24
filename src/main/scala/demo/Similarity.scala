@@ -107,7 +107,7 @@ class Similarity extends Serializable{
 		
     println("传入的list大小为："+list.size())
     val rdd=sc.parallelize(list.asScala)
-    println("rdd的partitions的大小是:"+rdd.partitions.size)
+//    println("rdd的partitions的大小是:"+rdd.partitions.size)
     return rdd
   }
   
@@ -126,7 +126,7 @@ class Similarity extends Serializable{
 //      var rdd=rdd.repartition(partition)
     var rddGlom=rdd.glom()
     rdd.persist(StorageLevel.MEMORY_AND_DISK)
-    println("rddGlom的partitions的大小是:"+rddGlom.partitions.size)
+//    println("rddGlom的partitions的大小是:"+rddGlom.partitions.size)
 //    		var rddGlom=rdd.glom()
     
 //    println("checkpoint路径是:"+sc.getCheckpointDir)
@@ -291,22 +291,22 @@ class Similarity extends Serializable{
     
 if(args(0).equals("minute")){
   
-    println("rdd的大小是:"+rdd.count())
-    rdd.collect().foreach(f ⇒ {
-        println("rdd:-------------------------------")
-        println(f)
-    })
+//    println("rdd的大小是:"+rdd.count())
+//    rdd.collect().foreach(f ⇒ {
+//        println("rdd:-------------------------------")
+//        println(f)
+//    })
     val rdd1 = rdd.map(r ⇒(r.getTrackletID,r.getFeatureVector))
     
-    println("rdd1的partitions的大小是:"+rdd1.partitions.size)
-    println("rdd1的大小是：" + rdd1.count())
-    rdd1.collect().foreach(f⇒{
-    	println("rdd1:-------------------------------")
-//    	for(i <- 0 until f.length ){
-//          print(f(i)+",")
-//      }
-    	println(f._1+":"+f._2(0))
-      })
+//    println("rdd1的partitions的大小是:"+rdd1.partitions.size)
+//    println("rdd1的大小是：" + rdd1.count())
+//    rdd1.collect().foreach(f⇒{
+//    	println("rdd1:-------------------------------")
+////    	for(i <- 0 until f.length ){
+////          print(f(i)+",")
+////      }
+//    	println(f._1+":"+f._2(0))
+//      })
      /* var rddGlom=rdd1.glom()
       rddGlom.collect().foreach(f⇒{
     	println("rddGlom:-------------------------------")
@@ -364,15 +364,15 @@ if(args(0).equals("minute")){
     }*/
       //.repartition(partition)
     val broadRdd=sc.parallelize(broad.value).map(r ⇒ (r.getTrackletID,r.getFeatureVector))
-    println("broadRdd的partitions的大小是:"+broadRdd.partitions.size)
-    println("broadRdd的大小是：" + broadRdd.count())
-    broadRdd.collect().foreach(f⇒{
-    	println("broadRdd:-------------------------------")
-//      for(i <- 0 until f._2.length ){
-//          print(f._1+":"+f._2(i)+",")
-//      }
-    	println(f._1+":"+f._2(0))
-      })
+//    println("broadRdd的partitions的大小是:"+broadRdd.partitions.size)
+//    println("broadRdd的大小是：" + broadRdd.count())
+//    broadRdd.collect().foreach(f⇒{
+//    	println("broadRdd:-------------------------------")
+////      for(i <- 0 until f._2.length ){
+////          print(f._1+":"+f._2(i)+",")
+////      }
+//    	println(f._1+":"+f._2(0))
+//      })
 
       val rdd1MapParRDD = rdd1.mapPartitions(f ⇒ {
     	  var buf1 = scala.collection.mutable.ArrayBuffer.empty[String]
@@ -383,8 +383,9 @@ if(args(0).equals("minute")){
         var result2 = scala.collection.mutable.ArrayBuffer.empty[Tuple2[Array[String],Array[Float]]]
         //        f.map(f⇒{
         while (f.hasNext) {
-        	buf1.+=(f.next()._1)
-          buf2.appendAll(f.next()._2)
+          var ele=f.next()
+        	buf2.appendAll(ele._2)
+        	buf1.+=(ele._1)
         }
         //        })
     	  val arr1=buf1.toArray
@@ -397,14 +398,14 @@ if(args(0).equals("minute")){
         //        arr.toIterator
       })
       //大小是Partitions的数量
-      println("rdd1MapParRDD的大小是：" + rdd1MapParRDD.count())
-      rdd1MapParRDD.collect.foreach(f ⇒ {
-        println("rdd1MapParRDD---------------------")
-        for (i <- 0 until f._1.length) {
-          print(f._1(i) + ","+f._2(i))
-        }
-        println()
-      })
+//      println("rdd1MapParRDD的大小是：" + rdd1MapParRDD.count())
+//      rdd1MapParRDD.collect.foreach(f ⇒ {
+//        println("rdd1MapParRDD---------------------")
+//        for (i <- 0 until f._1.length) {
+//          print(f._1(i) + ":"+f._2(i)+ ",")
+//        }
+//        println()
+//      })
 
       /*
       val broadRddMapParRDD = broadRdd.mapPartitions(f ⇒ {
@@ -434,11 +435,11 @@ if(args(0).equals("minute")){
 */
       //.map(f⇒(f._1,f._2._2))
       val caRDD = rdd1MapParRDD.cartesian(broadRdd)
-      println("caRDD的大小是：" + caRDD.count())
-       caRDD.collect.foreach(f ⇒ {
-        println("caRDD---------------------")
-        println(f._1._1.length+"---：：：----"+f._2._1)
-      })
+//      println("caRDD的大小是：" + caRDD.count())
+//       caRDD.collect.foreach(f ⇒ {
+//        println("caRDD---------------------")
+//        println(f._1._1.length+"---：：：----"+f._2._1)
+//      })
 
       val resultRdd = caRDD.map(f ⇒ {
 //              var tuple=new Tuple2[[IntBuffer],[FloatBuffer]]
@@ -464,18 +465,18 @@ if(args(0).equals("minute")){
 //        list.asScala.toIterator
           list
       })
-      println("resultRdd的大小是：" + resultRdd.count())
-      resultRdd.collect.foreach(f ⇒ {
-        println("list的大小是：" + f.size())
-        println("resultRdd---------------------")
-        for (i <- 0 until f.size()) {
-          println(f.get(i).toString(1))
-
-        }
-        println("list 的for循环结束")
-      })
+//      println("resultRdd的大小是：" + resultRdd.count())
+//      resultRdd.collect.foreach(f ⇒ {
+//        println("list的大小是：" + f.size())
+//        println("resultRdd---------------------")
+//        for (i <- 0 until f.size()) {
+//          println(f.get(i).toString(1))
+//
+//        }
+//        println("list 的for循环结束")
+//      })
       val resultFilterRdd = resultRdd.filter(f ⇒ f.size() != 0).flatMap(f ⇒ f.asScala).filter(f ⇒ f != null)
-      println("resultFilterRdd的大小是：" + resultFilterRdd.count())
+//      println("resultFilterRdd的大小是：" + resultFilterRdd.count())
      /* resultFilterRdd.collect.foreach(f ⇒ {
         if (f != null) {
           println("resultFilterRdd---------------------")
@@ -492,12 +493,12 @@ if(args(0).equals("minute")){
         println(f._1(0) + "---：：：----" + f._2(0) + "," + f._3)
       })*/
       
-      val test=resultFilterRdd.map(f⇒(f.getTrackletID1,f.getTrackletID2,f.getSim))
-      println("test的大小是：" + test.count())
-      test.collect.foreach(f ⇒ {
-        println("test---------------------")
-        println(f)
-      })
+      val test=resultFilterRdd.map(f⇒(f.getTrackletID2,(f.getTrackletID1,f.getSim))).filter(f ⇒ (f._2._2 != 0.0))
+//      println("test的大小是：" + test.count())
+//      test.collect.foreach(f ⇒ {
+//        println("test---------------------")
+//        println(f)
+//      })
       
       /*
        * 在javaknn里做了保存
@@ -707,16 +708,19 @@ if(args(0).equals("minute")){
     	println("rdd3:-------------------------------")
       println(f)
       })
-    val b=rdd3.groupByKey()
-    b.collect().foreach(f⇒{
-    	println("b:-------------------------------")
-      println(f)
-      })
+      * */
+    val b=test.groupByKey()
+//    println("b的个数是："+b.count())
+//    b.collect().foreach(f⇒{
+//    	println("b:-------------------------------")
+//      println(f)
+//      })
    val c= b.map(f⇒(f._1,(f._2.toList.sortBy(f⇒f._2))))
-   c.collect().foreach(f⇒{
-    	println("c:-------------------------------")
-      println(f)
-      })
+//   println("c的个数是："+c.count())
+//   c.collect().foreach(f⇒{
+//    	println("c:-------------------------------")
+//      println(f)
+//      })
    
    //计算top的时间
 //      val TOP3startTime = System.currentTimeMillis();
@@ -733,21 +737,21 @@ if(args(0).equals("minute")){
 //    val endTop =getCurrent_time
 //    println("topk用时:"+endTop+"-"+startTop+"="+(endTop-startTop))
     
-    println("topk 结束")
-//    println("result的个数是："+result.count())
 //    val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
-    result.collect().foreach(f⇒{
-    	println("result:-------------------------------")
-      println(f)
-      })
+//    println("result的个数是："+result.count())
+//    result.collect().foreach(f⇒{
+//    	println("result:-------------------------------")
+//      println(f)
+//      })
 //    val operationEndTime=System.currentTimeMillis();
 //    val operationEveryTime=operationEndTime - dbstartTime
 //    println("Cost time of every operation: " + (operationEveryTime) + "ms")
 
+    println("topk 结束")
     //测试不收集会不会执行add操作
     //闭包，没用的
-//    var i=0
+ /*   var i=0
     
     //依然是spark任务
     result.foreachPartition(f⇒{
@@ -787,7 +791,7 @@ if(args(0).equals("minute")){
     	}
     	println("内层foreach结束---------------------------")
       
-    })
+    })*/
     //foreach好像不再是spark任务
       result.foreachPartition(f⇒{
     	  
@@ -797,15 +801,15 @@ if(args(0).equals("minute")){
 //    		println("dbConnector-"+i+":"+dbConnector.toString)
 //      DbConnector.init()
 //    	val dbConnector = DbConnector.getInstance()
-    		val db=new Factory[Neo4jConnector](){
-    			
-    			def produce() :Neo4jConnector={
-    					return new Neo4jConnector()
-    			}
-    			
-    		};
-    		val dbConnSingleton=new SingletonUtil[Neo4jConnector](db, classOf[Neo4jConnector]);
-    		val dbConnector=dbConnSingleton.getInst()   
+//    		val db=new Factory[Neo4jConnector](){
+//    			
+//    			def produce() :Neo4jConnector={
+//    					return new Neo4jConnector()
+//    			}
+//    			
+//    		};
+//    		val dbConnSingleton=new SingletonUtil[Neo4jConnector](db, classOf[Neo4jConnector]);
+//    		val dbConnector=dbConnSingleton.getInst()   
         for(i <- 0 until f._2.length){
             println("min需要保存的结果是：[{'sim':"+f._2(i)._2+",'trackletID1':'"+f._1+"','trackletID2':'"+f._2(i)._1+"'}]")
 //            println("dbConnector的开启状态："+dbConnector.isOpen)
@@ -845,7 +849,7 @@ if(args(0).equals("minute")){
 //    val rdd5=rdd6.map(r⇒(r._2._1,r._2._2,r._1))
 //    println("结果是：-------------------------------------------")
 //    rdd5.collect().foreach(println)
-*/     }
+     }
 
 else if(args(0).equals("hour")){
       val rdd1 = rdd.map(r ⇒ ((r.getTrackletID, r.getFeatureVector,r.getStart)))

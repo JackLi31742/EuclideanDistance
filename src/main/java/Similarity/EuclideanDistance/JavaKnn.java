@@ -206,10 +206,10 @@ public class JavaKnn
     	String[] trackletID1s=tuple._1()._1();
     	int arr1len=arr1.length;
     	int arr2len=arr2.length;
-    	System.out.println("arr1len:"+arr1len+",arr2len"+arr2len);
+//    	System.out.println("arr1len:"+arr1len+",arr2len:"+arr2len);
     	int arr1Row=arr1len/col;
     	int arr2Row=arr2len/col;
-    	System.out.println("arr1Row:"+arr1Row+",arr2Row"+arr2Row+",trackletID1s的大小是："+trackletID1s.length);
+//    	System.out.println("arr1Row:"+arr1Row+",arr2Row:"+arr2Row+",trackletID1s的大小是："+trackletID1s.length);
     	
     	//得到mat
     	Mat mat1 = new Mat(arr1Row, col, CV_32FC1);
@@ -243,7 +243,7 @@ public class JavaKnn
         //打印索引和距离
         for(int i=0;i<arr2Row;i++){
 	        for (int j = i*k; j < (i+1)*k; j++) {
-	            System.out.println("被广播出去的index："+i+",总的index:" + indexBuf.get(j)+",距离:" + distsBuf.get(j));
+//	            System.out.println("被广播出去的index："+i+",总的index:" + indexBuf.get(j)+",距离:" + distsBuf.get(j));
 	            ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
 	            reIdAttributesTemp.setSim(distsBuf.get(j));
 	            reIdAttributesTemp.setFloatArrLineNum1(indexBuf.get(j));
@@ -252,7 +252,7 @@ public class JavaKnn
 	        }
         }
         
-        System.out.println("------------------------");
+       
         
         //打印mat,并保存
         FloatBuffer mat1Buf =mat1.getFloatBuffer();
@@ -267,7 +267,7 @@ public class JavaKnn
         	for (int j = i*col; j < (i+1)*col; ++j) {
         		
         		arr1list.add(mat1Buf.get(j));
-        		System.out.println("总的index:" +i+ ",element:" + mat1Buf.get(j));
+//        		System.out.println("总的index:" +i+ ",element:" + mat1Buf.get(j));
         	}
         	map1.put(i, ArrayUtils.toPrimitive(arr1list.toArray(new Float[0]), 0.0F));
         	arr1list=null;
@@ -282,7 +282,7 @@ public class JavaKnn
 	        for (int j = i*col; j < (i+1)*col; ++j) {
 	        	
 	        	arr2list.add(mat2Buf.get(j));
-	        	System.out.println("被广播出去的index:" +i+ ",element:" + mat2Buf.get(j));
+//	        	System.out.println("被广播出去的index:" +i+ ",element:" + mat2Buf.get(j));
 	        }
 	        map2.put(i,  ArrayUtils.toPrimitive(arr2list.toArray(new Float[0]), 0.0F));
 	        arr2list=null;
@@ -297,16 +297,16 @@ public class JavaKnn
 			reIdAttributesTemp.setTrackletID1(map1id.get(reIdAttributesTemp.getFloatArrLineNum1()));
 		}
 		
-		for (int i = 0; i < list.size(); i++) {
-			System.out.println("list:"+list.get(i).toString(1));
-		}
+//		for (int i = 0; i < list.size(); i++) {
+//			System.out.println("list:"+list.get(i).toString(1));
+//		}
 		
         // Release.
         fp1.close();
         fp2.close();
 //        fp1.deallocate();
 //        fp2.deallocate();
-        
+        System.out.println("every knn 结束---------------------");
         return list;
     }
     
