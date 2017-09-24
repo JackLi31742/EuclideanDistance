@@ -1,6 +1,5 @@
 package demo
-import java.nio.FloatBuffer
-import java.nio.IntBuffer
+import java.util.ArrayList
 import java.util.Date
 
 import scala.collection.JavaConverters.asScalaBufferConverter
@@ -11,16 +10,15 @@ import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
-import org.bytedeco.javacpp.opencv_core.Mat
 
 import Similarity.EuclideanDistance.GraphDatabaseConnector
 import Similarity.EuclideanDistance.JavaKnn
 import Similarity.EuclideanDistance.Neo4jConnector
 import entities.ReIdAttributesTemp
 import entities.ReIdAttributesTempRDD
-import java.util.ArrayList
-import java.util.Arrays
-import java.util.Collection
+
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
 
 /*class ForDemo {
   case class Point(x: Double, y: Double)
@@ -441,29 +439,40 @@ if(args(0).equals("minute")){
 //        println(f._1._1.length+"---：：：----"+f._2._1)
 //      })
 
-      val resultRdd = caRDD.map(f ⇒ {
+      val resultRdd = caRDD.mapPartitions(f ⇒ {
+//       try{
+        f.map(f⇒{
+//        	val lock: Lock  = new ReentrantLock();
 //              var tuple=new Tuple2[[IntBuffer],[FloatBuffer]]
-    	  var list: java.util.List[ReIdAttributesTemp] = new ArrayList
+//    	  var list: java.util.List[ReIdAttributesTemp] = new ArrayList
 //    	  var tuple=(f._1._1,f._1._2,f._2._1,f._2._2)
-//    	   var list= java.util.Collections.synchronizedList(new ArrayList[ReIdAttributesTemp]);
+    	   var list= java.util.Collections.synchronizedList(new ArrayList[ReIdAttributesTemp]);
         //        while (f.hasNext) {
         //          var ele = f.next()
         if (f._1._2.length > 0 && f._2._2.length > 0) {
 //          synchronized {
+//        	lock.lock();
             var javaKnn: JavaKnn = new JavaKnn();
             try {
-              list = javaKnn.getKnn(f, col, minK + 1, javaKnn)
+              list = javaKnn.getKnn(f, col, minK + 1, javaKnn,list)
             } catch {
               case e: Exception => println("exception caught: " + e);
             } finally {
 
               javaKnn = null
-//            }
+//              lock.unlock()
+            }
           }
-        }
+//        }
 //        }
 //        list.asScala.toIterator
           list
+      })
+//      }catch {
+//              case e1: Exception => println("exception caught: " + e1);
+//            } finally {
+//        lock.unlock()
+//            }
       })
 //      println("resultRdd的大小是：" + resultRdd.count())
 //      resultRdd.collect.foreach(f ⇒ {
@@ -796,6 +805,7 @@ if(args(0).equals("minute")){
       result.foreachPartition(f⇒{
     	  
     	  var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
+    	  
     	f.foreach(f⇒{
     	  //循环的次数就是节点的个数
 //    		println("dbConnector-"+i+":"+dbConnector.toString)

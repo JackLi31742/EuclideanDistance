@@ -23,7 +23,9 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.kernel.impl.transaction.RagManager;
 
 import Similarity.EuclideanDistance.util.Logger;
 import entities.Attributes;
@@ -1081,11 +1083,13 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	public List<ReIdAttributesTemp> addSimRel( String nodeID1, String nodeID2, double SimRel) {
 		// TODO Auto-generated method stub
 		Session session = driver.session();
+		Transaction tr=session.beginTransaction();
 		long dbstartTime = System.currentTimeMillis();
-		StatementResult result = session.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
+		List<ReIdAttributesTemp> list=new ArrayList<>();
+		try {
+		StatementResult result = tr.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
         		+ "return a.trackletID,b.trackletID,r.Minute;"
                 ,Values.parameters("id1", nodeID1, "id2", nodeID2,"Minute", SimRel));
-		List<ReIdAttributesTemp> list=new ArrayList<>();
 		while (result.hasNext()) {
 			Record record = result.next();
 			ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
@@ -1103,9 +1107,15 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				list.add(reIdAttributesTemp);
             
         }
+		tr.success();
         long dbendTime = System.currentTimeMillis();
         System.out.println("Cost time of minute everytime: " + (dbendTime - dbstartTime) + "ms");
-        session.close();
+		} catch (Exception e) {
+			// TODO: handle exception
+		}finally {
+			tr.close();
+			session.close();
+		}
         return list;
 	}
 	
