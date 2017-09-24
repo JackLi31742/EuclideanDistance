@@ -336,5 +336,12 @@
             <artifactId>neo4j-kernel</artifactId>
             <version>2.0.0-M06</version>
         </dependency>
+        	<!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-community -->
+<dependency>
+    <groupId>org.neo4j</groupId>
+    <artifactId>neo4j-community</artifactId>
+    <version>3.2.5</version>
+    <type>pom</type>
+</dependency>
 	</dependencies>
 </project>
