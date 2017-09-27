@@ -1110,7 +1110,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
         }
 		tx.success();
         long dbendTime = System.currentTimeMillis();
-        System.out.println("Cost time of minute everytime: " + (dbendTime - dbstartTime) + "ms");
+        System.out.println("Cost everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
 		} catch (Exception e) {
 			// TODO: handle exception
 		}finally {
@@ -1280,7 +1280,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 					"MATCH (a:Minute"
 					+ "{start:{start}}"
 					+ ")-[:INCLUDES_PERSON]-(b:Person{dataType:'track-reid-20170907'})  "
-					+ "where b.reidFeature is not null return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start;"
+					+ "where b.reidFeature is not null return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start limit 200;"
 					,Values.parameters("start", minute.getStart().longValue())
 					);
 			while (result.hasNext()) {

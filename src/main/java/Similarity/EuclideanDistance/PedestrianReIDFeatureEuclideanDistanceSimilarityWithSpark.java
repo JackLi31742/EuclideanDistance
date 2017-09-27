@@ -12,14 +12,13 @@ import demo.Similarity2;
 import entities.Hour;
 import entities.Minute;
 import entities.ReIdAttributesTemp;
-public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implements Serializable
-//extends SparkStreamingApp
-{
+import test.MapTest;
 	/**
-	 * 
+	 * 计算相似度
 	 */
+public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implements Serializable
+{
 	private static final long serialVersionUID = 411317335024542242L;
-//	public static final String APP_NAME = "reid-similarity";
 	public static Logger logger=new ConsoleLogger();
 	public GraphDatabaseConnector dbConnector=null;
 	public SingletonUtil<GraphDatabaseConnector> dbConnSingleton=null;
@@ -38,11 +37,6 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //		similarity2=new Similarity2();
 	//	final Logger logger = loggerSingleton.getInst();
 	}
-//	static SparkConf conf=new SparkConf().setMaster("spark://rtask-nod8:7077").setAppName("Euclidean-Distance");
-//	static JavaSparkContext sc=new JavaSparkContext(conf);
-//	public PedestrianReIDFeatureEuclideanDistanceSimilarity(SystemPropertyCenter propCenter) throws Exception{
-//		super(propCenter, APP_NAME);
-//	}
 
 	public static GraphDatabaseConnector getConnector(byte [] dbConnectorByte) throws Exception{
 		return SerializationHelper.deserialize(dbConnectorByte);
@@ -69,13 +63,9 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 			) throws Exception {
 		// 前k个
 //		int k = 50;
-//		listToVector(list);
-//		similarity(list);
 		;
 		//spark		
 		long SparkstartTime = System.currentTimeMillis();
-//		Similarity similarity=null;
-//		similarity=new Similarity();
 //		similarity2.glom(similarity2.listToRdd(list),args);
 		similarity.glomWithFlann(similarity.listToRdd(list),args);
 		long SparkendTime = System.currentTimeMillis();
@@ -83,85 +73,10 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //		printBroadcastList();
 //		EuDis(rdd);
-//		RDD<Simi> simi=
-//		foreachPrint(simi);
-		/*List wordslist = simi.collect();
-		for (int i = 0; i < wordslist.size(); i++) {
-			System.out.println("words--------------------------------");
-			System.out.println(wordslist.get(i));
-
-		}
-		JavaRDD<ReIdAttributesTemp> javaRDD = sc.parallelize(list);
 		
-		JavaRDD<String> logData1 = javaRDD.map(new Function<ReIdAttributesTemp, String>() {
-
-			@Override
-			public String call(ReIdAttributesTemp v1) throws Exception {
-				// TODO Auto-generated method stub
-				return v1.toString();
-			}
-
-		});
-		JavaPairRDD<String, Float> ones = javaRDD.mapToPair(
-			      new PairFunction<ReIdAttributesTemp, String, Float>() {
-			        public Tuple2<String, Float> call(ReIdAttributesTemp s) {
-			          return new Tuple2<String, Float>(s.getTrackletID(), s.getFeatureVector()[0]);
-			        }
-			      });
-		List<JavaRDD<ReIdAttributesTemp>> javaRDDsList=new ArrayList<>();
-		javaRDDsList.add(javaRDD);
-		javaRDDsList.add(javaRDD);
-		javaRDDsList.forEach(new Consumer<JavaRDD<ReIdAttributesTemp>>() {
-
-			@Override
-			public void accept(JavaRDD<ReIdAttributesTemp> t) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
-		for (int i = 0; i < javaRDDsList.size(); i++) {
-			JavaPairRDD<ReIdAttributesTemp, ReIdAttributesTemp> ones = javaRDDsList.get(i).mapToPair(
-					new PairFunction<ReIdAttributesTemp, ReIdAttributesTemp, ReIdAttributesTemp>() {
-						public Tuple2<ReIdAttributesTemp, ReIdAttributesTemp> call(ReIdAttributesTemp s) {
-							return new Tuple2<ReIdAttributesTemp, ReIdAttributesTemp>(s, s);
-						}
-					});
-		}
-		List<ReIdAttributesTemp> uList=new ArrayList<>();
-		 JavaRDD<ReIdAttributesTemp> words = javaRDD.flatMap(new FlatMapFunction<ReIdAttributesTemp, ReIdAttributesTemp>() {
-		      public Iterator<ReIdAttributesTemp> call(ReIdAttributesTemp s) {
-		    	  uList.add(s);
-		        return uList.iterator();
-		      }
-		    });
-		 
-		 
-		JavaPairRDD<ReIdAttributesTemp, ReIdAttributesTemp> ones = words.mapToPair(
-				new PairFunction<ReIdAttributesTemp, ReIdAttributesTemp, ReIdAttributesTemp>() {
-					public Tuple2<ReIdAttributesTemp, ReIdAttributesTemp> call(ReIdAttributesTemp s) {
-						return new Tuple2<ReIdAttributesTemp, ReIdAttributesTemp>(s, s);
-					}
-				});
-//		List outlist = ones.join(ones).collect();
-		JavaRDD<Double> double1=ones.map(new Function<Tuple2<ReIdAttributesTemp, ReIdAttributesTemp>, Double>() {
-
-			@Override
-			public Double call(Tuple2<ReIdAttributesTemp, ReIdAttributesTemp> v1) throws Exception {
-				// TODO Auto-generated method stub
-				ReIdAttributesTemp r1=v1._1();
-				ReIdAttributesTemp r2=v1._2();
-				return getSim(r1.getFeatureVector(), r2.getFeatureVector());
-			}
-			
-		});
-		List outlist = double1.collect();
-		for (int i = 0; i < outlist.size(); i++) {
-			System.out.println("--------------------------------");
-			System.out.println(outlist.get(i));
-
-		}*/
-		
-		/*long startTime = System.currentTimeMillis();
+		//单机版java实现
+		/*
+		long startTime = System.currentTimeMillis();
 		MultiKeyMap<String, Double> multiKeyMap=new MultiKeyMap<>();
 //		ReIdAttributesTemp reIdAttributesTemp[][]=new ReIdAttributesTemp[list.size()][list.size()];
 		List<ReIdAttributesTempRDD> reIdAttributesTempRDDList=new ArrayList<>();
@@ -187,7 +102,6 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 			}
 		}
 		
-//		EuDis2(listToRdd(reIdAttributesTempRDDList));
 		
 		List<Entry<MultiKey<? extends String>, Double>> multiKeyMapList=
 				new ArrayList<Entry<MultiKey<? extends String>, Double>>(multiKeyMap.entrySet());
@@ -231,7 +145,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		}
 		long endTime = System.currentTimeMillis();
 
-		logger.info("Cost time of nomal: " + (endTime - startTime) + "ms");*/
+		logger.info("Cost time of nomal java: " + (endTime - startTime) + "ms");
+		*/
 	}
 	
 	public static void main(String[] args) throws Exception  {
@@ -242,7 +157,7 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
 		p.init();
 		p.addToContext(args);
-//		MapTest.MapPartitionsTest();
+//		MapTest.doubleMap();
 //		matrix m=new matrix();
 //		m.testmatrix();
 //		test();
@@ -276,40 +191,18 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //			List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(new Minute());
 			
-		/*JavaRDD<ReIdAttributesTemp> javaRDD = sc.parallelize(list);
-		JavaRDD<String> logData1 = javaRDD.map(new Function<ReIdAttributesTemp, String>() {
-
-			@Override
-			public String call(ReIdAttributesTemp v1) throws Exception {
-				// TODO Auto-generated method stub
-				return v1.toString();
-			}
-
-		});
-		List outlist = logData1.collect();
-		for (int i = 0; i < outlist.size(); i++) {
-			System.out.println("--------------------------------");
-			System.out.println(outlist.get(i));
-
-		}*/
 		
 		
-		/*JavaRDD<Integer> rdd=sc.parallelize(Arrays.asList(1,2,3,4));
-		JavaRDD<Integer> result=rdd.map(new Function2<Integer, Integer, Integer>() {
-			public Integer call(Integer x){ return x*x;}
-		});
-		System.out.println(StringUtils.join(result.collect(),","));*/
 		
-//			for (int j = 0; j < list.size(); j++) {
-//				System.out.println(list.get(j));
-//			}
+		
+		
+
 						if (list!=null) {
 							
 							if (list.size()>0) {
 								System.out.println("找到的minute是："+minList.get(i).toString());
 			//				System.out.println(minList.get(i)+":"+list.size());
-			//				getSim(outlist);
-			//		getSim(list,sc);
+			
 								try {
 									/*for (int j = 0; j <list.size(); j++) {
 										System.out.println("out:--------------------------------");

@@ -10,17 +10,45 @@ import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
+import org.bytedeco.javacpp.FloatPointer
+import org.bytedeco.javacpp.opencv_core.Mat
 
 import Similarity.EuclideanDistance.GraphDatabaseConnector
 import Similarity.EuclideanDistance.JavaKnn
 import Similarity.EuclideanDistance.Neo4jConnector
 import entities.ReIdAttributesTemp
 import entities.ReIdAttributesTempRDD
+import entities.FeatureData
+import org.bytedeco.javacpp.opencv_flann.FLANN_DIST_L2;
+import java.text.SimpleDateFormat
+import Similarity.EuclideanDistance.util.ConsoleLogger;
+import Similarity.EuclideanDistance.util.Logger;
 
-import java.util.concurrent.locks.Lock
-import java.util.concurrent.locks.ReentrantLock
 
-/*class ForDemo {
+class Similarity extends Serializable{
+  @transient
+   val conf =new SparkConf().set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
+                             .set("spark.executor.heartbeatInterval", "100000")
+                             .set("spark.network.timeout", "10000000")
+//                             .set("spark.shuffle.blockTransferService", "nio")
+//		 .set("spark.driver.allowMultipleContexts","true")
+   @transient
+		val sc=new SparkContext(conf)
+  @transient
+  val logger:Logger=new ConsoleLogger()
+  val partition=100
+  val col=128
+  val minK=2
+  val hourK=10
+////  @transient
+//  val driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
+//            AuthTokens.basic("neo4j", "casia@1234"));
+////  @transient
+//	val session = driver.session();
+//    @transient
+//    val dbConnector=new Neo4jConnector();
+  
+    /*def demo() {
   case class Point(x: Double, y: Double)
 
   val points = List(Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4))
@@ -36,29 +64,9 @@ import java.util.concurrent.locks.ReentrantLock
   .map({ case (a, b) => (a, b, distance(a._1, b._1)) })
 
   dis.foreach(println)
-}*/
-
-class Similarity extends Serializable{
-  @transient
-   val conf =new SparkConf().set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
-                             .set("spark.executor.heartbeatInterval", "100000")
-                             .set("spark.network.timeout", "10000000")
-//                             .set("spark.shuffle.blockTransferService", "nio")
-//		 .set("spark.driver.allowMultipleContexts","true")
-   @transient
-		val sc=new SparkContext(conf)
-  val partition=3
-  val col=128
-  val minK=2
-  val hourK=10
-////  @transient
-//  val driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
-//            AuthTokens.basic("neo4j", "casia@1234"));
-////  @transient
-//	val session = driver.session();
-//    @transient
-//    val dbConnector=new Neo4jConnector();
-      
+}*/  
+  
+  
   /*def combs(rdd:RDD[String]):RDD[(String,String)] = {
     val count = rdd.count
     if (rdd.count < 2) { 
@@ -78,24 +86,15 @@ class Similarity extends Serializable{
   /* def similarity(list:List[ReIdAttributesTemp])={
     val conf =new SparkConf().setMaster("spark://rtask-nod8:7077").setAppName("Euclidean-Distance")
     val sc=new SparkContext(conf)
-    println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     println("传入的list是："+list.toString())
     
     val pointsWithIndex=list.asScala.toList.zipWithIndex
     val dis = pointsWithIndex.flatMap(a => pointsWithIndex.filter(_._2 > a._2).map((a, _)))
   .map({ case (a, b) => (a._1.getTrackletID, b._1.getTrackletID, euclidean(a._1.getFeatureVector, b._1.getFeatureVector)) })
-  println("结果是是：yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
   dis.foreach(println)
-
-    
   }*/
   
-	def reciveList(list:java.util.List[ReIdAttributesTemp]){
-//	  val rdd=listToRdd(list)._1
-//	  var sc  =listToRdd(list)._2
-//	  glom(listToRdd(list)._1, listToRdd(list)._2)
-	  
-	}
+
 	def listToVector(list:java.util.List[ReIdAttributesTemp]){
 	  var v=list.asScala.toVector
 	  v.foreach(println)
@@ -103,10 +102,29 @@ class Similarity extends Serializable{
   def listToRdd(list:java.util.List[ReIdAttributesTemp]
       ):(RDD[ReIdAttributesTemp])={
 		
-    println("传入的list大小为："+list.size())
+    logger.info("传入的list大小为："+list.size())
+    //,partition
     val rdd=sc.parallelize(list.asScala)
 //    println("rdd的partitions的大小是:"+rdd.partitions.size)
     return rdd
+  }
+
+  //合并数组元素
+  def unionArrData(arr: Array[ReIdAttributesTemp]):(scala.collection.mutable.ArrayBuffer[(Array[String], Array[Float])] )= {
+    var buf1 = scala.collection.mutable.ArrayBuffer.empty[String]
+    var buf2 = scala.collection.mutable.ArrayBuffer.empty[Float]
+    var result = scala.collection.mutable.ArrayBuffer.empty[Tuple2[Array[String], Array[Float]]]
+    for (i <- 0 until arr.length) {
+      var reIdAttributesTemp = arr(i)
+      var trackletID = reIdAttributesTemp.getTrackletID
+      var featureVector = reIdAttributesTemp.getFeatureVector
+      buf1.+=(trackletID)
+      buf2.appendAll(featureVector)
+    }
+    val arr1 = buf1.toArray
+    val arr2 = buf2.toArray
+    result.+=(Tuple2(arr1, arr2))
+    result
   }
   
   //使用flann
@@ -114,7 +132,6 @@ class Similarity extends Serializable{
   , args:Array[String]
   )={
     try{
-//    rdd.repartition(10)
     //对于每个节点都得到KNN，目前没有高效的，可以避免重复计算的办法
 //    var rddWithIndex=rdd.zipWithIndex()
     //直接使用rdd，不再再次赋给另一个rddWithIndex
@@ -145,7 +162,8 @@ class Similarity extends Serializable{
     for(i <- 0 until rddArr.length){
       var arr=rddArr(i)
           if(arr.length>0){
-          val broadcastVar = sc.broadcast(arr)
+//          val broadcastVar = sc.broadcast(arr)
+        		  val broadcastVar = sc.broadcast(unionArrData(arr))
 //          var broadcastRdd=sc.parallelize(broadcastVar.value)
 //          println("broadcastRdd的partitions的大小是:"+broadcastRdd.partitions.size)
           everyOneNeedEuDisWithFlann(rdd, broadcastVar, args)
@@ -153,16 +171,16 @@ class Similarity extends Serializable{
           broadcastVar.unpersist()
 //          broadcastRdd.unpersist()
           }
-      println(i + "次-----------------------------------结束")
+      logger.info(i + "次-----------------------------------结束")
     }
     		
 //    		rdd.unpersist()
 //    		rddGlom.unpersist()
-    println("打印的最终结果是：")
+    logger.info("本次结束")
 
     }finally {
     rdd.unpersist()
-      println("glom finally");
+    logger.info("glom finally");
 //      dbConnSingleton.getInst.finalize()
 //      rdd.unpersist()
 //      sc.stop()
@@ -175,108 +193,14 @@ class Similarity extends Serializable{
 //    return list
   }
   
-  //glom and Broadcast
-  def glom(rdd: RDD[ReIdAttributesTemp]
-//      ,dbConnectorByte:Array[Byte]
-//  ,dbConnSingleton:SingletonUtil[GraphDatabaseConnector]
-  , args:Array[String]
-  )={
-    try{
-//    rdd.repartition(10)
-    //对于每个节点都得到KNN，目前没有高效的，可以避免重复计算的办法
-//    var rddWithIndex=rdd.zipWithIndex()
-    //直接使用rdd，不再再次赋给另一个rddWithIndex
-//    		var rddWithIndex=rdd
-    //这里原来是rddWithIndex
-//    var rddGlom=rddWithIndex.repartition(10).glom()
-      //小数据量需要.repartition(partition)
-    		var rddGlom=rdd.glom()
-    		 
-    
-//    println("checkpoint路径是:"+sc.getCheckpointDir)
-//    rddGlom.map(f⇒{
-//      var broadcastVar = sc.broadcast(f)
-//      EuDis(rdd,broadcastVar)
-//      broadcastVar.unpersist()
-//    })
-    		
-//    				var operationTime=0l 
-//    				var dbTime=0l
-//    				val count=sc.accumulator(0)
-    				
-    //而且由于每个都要得到KNN，所以就不需要汇总了
-//    val resultListBuf = scala.collection.mutable.ListBuffer.empty[Array[(String, String, Double)]]
-    
-    var rddArr=rddGlom.collect()
-    for(i <- 0 until rddArr.length){
-      var arr=rddArr(i)
-      if(arr.length>0){
-          val broadcastVar = sc.broadcast(arr)
-          
-      //rdd原来也是rddWithIndex
-      
-          val resultTime=everyOneNeedEuDis(rdd,broadcastVar, args)
-//      operationTime +=resultTime._1
-//      dbTime+=resultTime._2
-     
-//      resultListBuf +=result
-          println(i+"次-----------------------------------结束")
-//      list.+:(broadcastVar)
-          broadcastVar.unpersist()
-//      for(j <-0 until arr.length ){
-//        print(arr(j).getTrackletID+",")
-//      }
-      }
-    }
-    		/*
-    		 * 测试失败
-    		rddGlom.foreach(f⇒{
-//    		  while(f.hasNext){
-    		    var temp=f
-    		    for(j <-0 until temp.length){
-    		      
-    		    	println("temp:"+count+":"+temp(j).getTrackletID)
-    		    }
-//    		  f.foreach(f⇒{
-    		    val broadcastVar = sc.broadcast(temp)
-    		    val resultTime=everyOneNeedEuDis(rdd,broadcastVar, args)
-    		    operationTime +=resultTime._1
-            dbTime+=resultTime._2
-            count+=1
-            broadcastVar.unpersist()
-            println(count+"次----------------while-------------------结束")
-//    		  })
-//    		}
-    		  println(count+"次---------------foreachPartition-------------------结束")
-    		})
-    		println(count+"次----------------out-------------------结束")
-    		*/
-    		
-    println("打印的最终结果是：")
-//    println("Cost time of operation: " + (operationTime) + "ms")
-//    println("Cost time of db: " + (dbTime) + "ms");
-    }finally {
-      println("glom finally");
-//      dbConnSingleton.getInst.finalize()
-//      rdd.unpersist()
-//      sc.stop()
-    }
-    //.reverse
-//     val resultListSort=resultListBuf.toList.flatMap(f⇒f).sortBy(f⇒(f._3))(Ordering.Double)
-//    resultListSort.foreach(println)
-    
-//    resultListBuf.foreach(f⇒f.foreach(println))
-//    return list
-  }
   
-  def printBroadcastList(list:List[Broadcast[Array[ReIdAttributesTemp]]]){
-	  println("--------------------------")
-	  list.foreach(f⇒f.value.foreach(f⇒println(f.getTrackletID)))
-    
-  }
   
-  //笛卡尔积和Broadcast，每一个都要有KNN
-  def everyOneNeedEuDisWithFlann(rdd: RDD[ReIdAttributesTemp],broad:Broadcast[Array[ReIdAttributesTemp]]
+  
+  
+  //笛卡尔积和Broadcast，每一个都要有KNN，使用flann
+  def everyOneNeedEuDisWithFlann(rdd: RDD[ReIdAttributesTemp],
+      broad:Broadcast[scala.collection.mutable.ArrayBuffer[(Array[String], Array[Float])]]
+//    		  broad:Broadcast[Array[ReIdAttributesTemp]]
 //          ,dbConnectorByte:Array[Byte]  
 //  ,dbConnSingleton:SingletonUtil[GraphDatabaseConnector]
   , args:Array[String]
@@ -360,8 +284,9 @@ if(args(0).equals("minute")){
     for(i<- 0 until broadArr.length){
       
     }*/
-      //.repartition(partition)
-    val broadRdd=sc.parallelize(broad.value).map(r ⇒ (r.getTrackletID,r.getFeatureVector))
+      //.repartition(partition)    ,partition
+//    val broadRdd=sc.parallelize(broad.value).map(r ⇒ (r.getTrackletID,r.getFeatureVector))
+    val broadRdd=sc.parallelize(broad.value)
 //    println("broadRdd的partitions的大小是:"+broadRdd.partitions.size)
 //    println("broadRdd的大小是：" + broadRdd.count())
 //    broadRdd.collect().foreach(f⇒{
@@ -369,7 +294,7 @@ if(args(0).equals("minute")){
 ////      for(i <- 0 until f._2.length ){
 ////          print(f._1+":"+f._2(i)+",")
 ////      }
-//    	println(f._1+":"+f._2(0))
+//    	println(f._1.length+":"+f._2.length)
 //      })
 
       val rdd1MapParRDD = rdd1.mapPartitions(f ⇒ {
@@ -395,7 +320,8 @@ if(args(0).equals("minute")){
         result2.+=(Tuple2(arr1,arr2)).iterator
         //        arr.toIterator
       })
-      //大小是Partitions的数量
+//      println("rdd1MapParRDD的partitions的大小是:"+rdd1MapParRDD.partitions.size)
+//      //大小是Partitions的数量
 //      println("rdd1MapParRDD的大小是：" + rdd1MapParRDD.count())
 //      rdd1MapParRDD.collect.foreach(f ⇒ {
 //        println("rdd1MapParRDD---------------------")
@@ -405,8 +331,8 @@ if(args(0).equals("minute")){
 //        println()
 //      })
 
-      /*
-      val broadRddMapParRDD = broadRdd.mapPartitions(f ⇒ {
+      
+      /*val broadRddMapParRDD = broadRdd.mapPartitions(f ⇒ {
         var buf1 = scala.collection.mutable.ArrayBuffer.empty[Float]
         //    	 var resultMap = Map[String,Array[Float]]()
         //    	 var result = List[Array[Float]]()
@@ -429,51 +355,77 @@ if(args(0).equals("minute")){
           print(f(i) + ",")
         }
         println()
-      })
-*/
+      })*/
+
       //.map(f⇒(f._1,f._2._2))
       val caRDD = rdd1MapParRDD.cartesian(broadRdd)
+//      println("caRDD的partitions的大小是:"+caRDD.partitions.size)
 //      println("caRDD的大小是：" + caRDD.count())
 //       caRDD.collect.foreach(f ⇒ {
 //        println("caRDD---------------------")
-//        println(f._1._1.length+"---：：：----"+f._2._1)
+//        println(f._1._1.length+","+f._1._2.length+"---：：：----"+f._2._1.length+","+f._2._2.length)
 //      })
 
-      val resultRdd = caRDD.mapPartitions(f ⇒ {
+      val resultRdd = caRDD.map(f ⇒ {
 //       try{
-        f.map(f⇒{
+    	  var list: java.util.List[ReIdAttributesTemp] = new ArrayList
+        if(f!=null){
+//        f.map(f⇒{
 //        	val lock: Lock  = new ReentrantLock();
 //              var tuple=new Tuple2[[IntBuffer],[FloatBuffer]]
-//    	  var list: java.util.List[ReIdAttributesTemp] = new ArrayList
 //    	  var tuple=(f._1._1,f._1._2,f._2._1,f._2._2)
-    	   var list= java.util.Collections.synchronizedList(new ArrayList[ReIdAttributesTemp]);
+//    	   var list= java.util.Collections.synchronizedList(new ArrayList[ReIdAttributesTemp]);
         //        while (f.hasNext) {
         //          var ele = f.next()
         if (f._1._2.length > 0 && f._2._2.length > 0) {
 //          synchronized {
 //        	lock.lock();
             var javaKnn: JavaKnn = new JavaKnn();
+            var fd:FeatureData=null
             try {
-              list = javaKnn.getKnn(f, col, minK + 1, javaKnn,list)
+              //,list
+//              list = javaKnn.getKnn(f, col, minK + 1, javaKnn)
+//            list = javaKnn.getKnn(f._1._2,f._2._2, col, minK + 1, javaKnn)
+              fd=javaKnn.getMats(f._1._2,f._2._2, col)
+              fd.setTrackletID1s(f._1._1)
+              fd.setTrackletID2s(f._2._1)
+//              fd.setTrackletID2(f._2._1)
+              javaKnn.init(minK + 1, FLANN_DIST_L2);
+              val startTime = System.currentTimeMillis();
+//              javaKnn.knnSearch(mat2, mat1);
+              javaKnn.knnSearch(fd)
+              val endTime = System.currentTimeMillis();
+//        		  System.out.println("Cost time of ervry knn: " + (endTime - startTime) + "ms");
+		
+              // Get results.
+               var indexMat:Mat  = javaKnn.getIndexMat();
+               var distsMat:Mat  = javaKnn.getDistMat();
+               fd.setIndexMat(indexMat)
+               fd.setDistsMat(distsMat)
+               list =javaKnn.getResults(fd, col)
+              
             } catch {
-              case e: Exception => println("exception caught: " + e);
+              case e: Exception => println("exception caught: " + e.getCause);
             } finally {
-
+              javaKnn.release(fd)
               javaKnn = null
+              fd=null
 //              lock.unlock()
             }
           }
 //        }
 //        }
 //        list.asScala.toIterator
-          list
-      })
+//      })
+      }
+      list
 //      }catch {
 //              case e1: Exception => println("exception caught: " + e1);
 //            } finally {
 //        lock.unlock()
 //            }
       })
+//      println("resultRdd的partitions的大小是:"+resultRdd.partitions.size)
 //      println("resultRdd的大小是：" + resultRdd.count())
 //      resultRdd.collect.foreach(f ⇒ {
 //        println("list的大小是：" + f.size())
@@ -485,6 +437,7 @@ if(args(0).equals("minute")){
 //        println("list 的for循环结束")
 //      })
       val resultFilterRdd = resultRdd.filter(f ⇒ f.size() != 0).flatMap(f ⇒ f.asScala).filter(f ⇒ f != null)
+//      println("resultFilterRdd的partitions的大小是:"+resultFilterRdd.partitions.size)
 //      println("resultFilterRdd的大小是：" + resultFilterRdd.count())
      /* resultFilterRdd.collect.foreach(f ⇒ {
         if (f != null) {
@@ -805,35 +758,50 @@ if(args(0).equals("minute")){
       result.foreachPartition(f⇒{
     	  
     	  var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
+    	  val logger:Logger=new ConsoleLogger()
+      try{
+      	f.foreach(f⇒{
+      	  //循环的次数就是节点的个数
+  //    		println("dbConnector-"+i+":"+dbConnector.toString)
+  //      DbConnector.init()
+  //    	val dbConnector = DbConnector.getInstance()
+  //    		val db=new Factory[Neo4jConnector](){
+  //    			
+  //    			def produce() :Neo4jConnector={
+  //    					return new Neo4jConnector()
+  //    			}
+  //    			
+  //    		};
+  //    		val dbConnSingleton=new SingletonUtil[Neo4jConnector](db, classOf[Neo4jConnector]);
+  //    		val dbConnector=dbConnSingleton.getInst()   
+          for(i <- 0 until f._2.length){
+              logger.info("min需要保存的结果是：[{'sim':"+f._2(i)._2+",'trackletID1':'"+f._1+"','trackletID2':'"+f._2(i)._1+"'}]")
+  //            println("dbConnector的开启状态："+dbConnector.isOpen)
+              if(!(f._2(i)._2.toString().equals("null"))){
+            	    var outlist:scala.collection.immutable.List[ReIdAttributesTemp]=null
+                	try{
+                	  outlist=dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList
+                		logger.info("min保存完成的结果是："+outlist.toString())
+                  }catch{
+                    case e: Exception => println("失败了一次，exception caught: " + e);
+                    outlist=dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
+                    logger.info("min再次保存完成的结果是："+outlist.toString())
+                  }finally {
+//                    logger.info("失败了一次，再次保存")
+                  }
+              }
+          }
+  //        		i =i+ 1
+        })
+      }catch{
+        case e: Exception => logger.info("彻底失败了，exception caught: " + e);
+      }
+      finally {
+        
+    	  dbConnector.finalize()
     	  
-    	f.foreach(f⇒{
-    	  //循环的次数就是节点的个数
-//    		println("dbConnector-"+i+":"+dbConnector.toString)
-//      DbConnector.init()
-//    	val dbConnector = DbConnector.getInstance()
-//    		val db=new Factory[Neo4jConnector](){
-//    			
-//    			def produce() :Neo4jConnector={
-//    					return new Neo4jConnector()
-//    			}
-//    			
-//    		};
-//    		val dbConnSingleton=new SingletonUtil[Neo4jConnector](db, classOf[Neo4jConnector]);
-//    		val dbConnector=dbConnSingleton.getInst()   
-        for(i <- 0 until f._2.length){
-            println("min需要保存的结果是：[{'sim':"+f._2(i)._2+",'trackletID1':'"+f._1+"','trackletID2':'"+f._2(i)._1+"'}]")
-//            println("dbConnector的开启状态："+dbConnector.isOpen)
-            if(!(f._2(i)._2.toString().equals("null"))){
-              
-            	val outlist=dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2)
-            			println("min保存完成的结果是："+outlist.toString())
-            }
-        }
-//        		i =i+ 1
-      })
-        	dbConnector.finalize()
-
-    	    dbConnector=null
+    	  dbConnector=null
+      }
 //    	println("内层foreach结束---------------------------")
       
     })
@@ -862,208 +830,305 @@ if(args(0).equals("minute")){
      }
 
 else if(args(0).equals("hour")){
-      val rdd1 = rdd.map(r ⇒ ((r.getTrackletID, r.getFeatureVector,r.getStart)))
-   /* rdd1.collect().foreach(f⇒{
-    	println("rdd1:-------------------------------")
-      println(f)
-      })*/
-   /* var broadArr=broad.value
-    for(i<- 0 until broadArr.length){
-      
-    }*/
-    val broadRdd=sc.parallelize(broad.value).map(r ⇒ ((r.getTrackletID, r.getFeatureVector,r.getStart)))
-   /* println("broadRdd的个数是："+broadRdd.count())
-    broadRdd.collect().foreach(f⇒{
-    	println("broadRdd:-------------------------------")
-      println(f)
-      })*/
-    val caRDD = rdd1.cartesian(broadRdd)
-    /*caRDD.collect().foreach(f⇒{
-    	println("caRDD:-------------------------------")
-      println(f)
-      })*/
-    val rdd2=caRDD.filter(r⇒r._1._1 != r._2._1).filter(r⇒(r._1._2!=null)&&(r._2._2!=null)&&(r._1._3!=r._2._3))
-    
-     /*println("rdd2的个数是："+rdd2.count())
-    rdd2.collect().foreach(r⇒{
-    	println("rdd2:-------------------------------")
-      println(r)
-      })*/
-//    rdd2.collect().foreach(println)
-//    val start=getCurrent_time
-//    val rdd3=rdd2.map(r⇒(r._1._1,r._2._1,euclidean(r._1._2,r._2._2)))
-    var rdd3:RDD[(String, (String, Double))]=null
-    if(rdd2!=null){
-      
-//    	rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
-    
-      rdd3=rdd2.mapPartitions(r⇒{
-      r.map(r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2))))
-      
-      })
-      }
-//      rdd3.cache
-      rdd3.persist(StorageLevel.MEMORY_AND_DISK)
-//    val rdd4=rdd3.first()
-//    println("rdd4--------------------------------------:"+rdd4)
-//    val end =getCurrent_time
-//    println("欧氏距离计算用时:"+end+"-"+start+"="+(end-start))
-//    c.sortByKey().collect.foreach(println)
-//    val rdd4=rdd3.map(r⇒(r._3,r))
-//    rdd4.collect().foreach(println)
-//    println("传入的rdd4是：-------------------------------------------")
-//    val re=rdd4.top(3)(Ordering.by[(Double, (String, String,Double)), Double](_._1))  
-//    val startTop=getCurrent_time
-    /*println("rdd3的个数是："+rdd3.count())
-    rdd3.collect().foreach(f⇒{
-    	println("rdd3:-------------------------------")
-      println(f)
-      })*/
-    val b=rdd3.groupByKey()
-    /*println("b的个数是："+b.count())
-    b.collect().foreach(f⇒{
-    	println("b:-------------------------------")
-      println(f)
-      })*/
-    
-     //必须收集才可以将work上的信息拿回来
-    /*
-    var list:java.util.List[ReIdAttributesTemp]=new ArrayList[ReIdAttributesTemp]()
-    b.collect().foreach(f⇒{
-    	var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
-    	  
-    			val eachList=dbConnector.getPersonSimList(f._1)
-//    					println("eachList:"+eachList.size()+", "+eachList.toString())
-    					if(eachList!=null){
-    						
-    						list.addAll(eachList)
-    					}
-      dbConnector.finalize()
-    	dbConnector=null
-    })
-    var rdd4: RDD[ReIdAttributesTemp]=null
-    if(list!=null){
-      
-//    	println("list:"+list.toString())
-    	rdd4=listToRdd(list)
-    }
-    rdd4.collect().foreach(f⇒{
-    	println("rdd4:-------------------------------")
-      println(f)
-      })*/
-      
-//    var d:RDD[(String, (String, Double))]=null
-    val e= b.map(f⇒{
-      
-    	var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
-    	  
-    			val eachList=dbConnector.getPersonSimList(f._1)
-//    					println("eachList:"+eachList.size()+", "+eachList.toString())
+//      val rdd1 = rdd.map(r ⇒ ((r.getTrackletID, r.getFeatureVector,r.getStart)))
+//   /* rdd1.collect().foreach(f⇒{
+//    	println("rdd1:-------------------------------")
+//      println(f)
+//      })*/
+//   /* var broadArr=broad.value
+//    for(i<- 0 until broadArr.length){
+//      
+//    }*/
+////    val broadRdd=sc.parallelize(broad.value).map(r ⇒ ((r.getTrackletID, r.getFeatureVector,r.getStart)))
+//    val broadRdd=sc.parallelize(broad.value)
+//   /* println("broadRdd的个数是："+broadRdd.count())
+//    broadRdd.collect().foreach(f⇒{
+//    	println("broadRdd:-------------------------------")
+//      println(f)
+//      })*/
+//    val caRDD = rdd1.cartesian(broadRdd)
+//    /*caRDD.collect().foreach(f⇒{
+//    	println("caRDD:-------------------------------")
+//      println(f)
+//      })*/
+////    val rdd2=caRDD.filter(r⇒r._1._1 != r._2._1).filter(r⇒(r._1._2!=null)&&(r._2._2!=null)&&(r._1._3!=r._2._3))
+//    val rdd2=caRDD.filter(r⇒r._1._1 != r._2._1).filter(r⇒(r._1._2!=null)&&(r._2._2!=null))
+//    
+//     /*println("rdd2的个数是："+rdd2.count())
+//    rdd2.collect().foreach(r⇒{
+//    	println("rdd2:-------------------------------")
+//      println(r)
+//      })*/
+////    rdd2.collect().foreach(println)
+////    val start=getCurrent_time
+////    val rdd3=rdd2.map(r⇒(r._1._1,r._2._1,euclidean(r._1._2,r._2._2)))
+//    var rdd3:RDD[(String, (String, Double))]=null
+//    if(rdd2!=null){
+//      
+////    	rdd3=rdd2.map{case r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2)))}
+//    
+//      rdd3=rdd2.mapPartitions(r⇒{
+//      r.map(r⇒(r._2._1,(r._1._1,euclidean(r._1._2,r._2._2))))
+//      
+//      })
+//      }
+////      rdd3.cache
+//      rdd3.persist(StorageLevel.MEMORY_AND_DISK)
+////    val rdd4=rdd3.first()
+////    println("rdd4--------------------------------------:"+rdd4)
+////    val end =getCurrent_time
+////    println("欧氏距离计算用时:"+end+"-"+start+"="+(end-start))
+////    c.sortByKey().collect.foreach(println)
+////    val rdd4=rdd3.map(r⇒(r._3,r))
+////    rdd4.collect().foreach(println)
+////    println("传入的rdd4是：-------------------------------------------")
+////    val re=rdd4.top(3)(Ordering.by[(Double, (String, String,Double)), Double](_._1))  
+////    val startTop=getCurrent_time
+//    /*println("rdd3的个数是："+rdd3.count())
+//    rdd3.collect().foreach(f⇒{
+//    	println("rdd3:-------------------------------")
+//      println(f)
+//      })*/
+//    val b=rdd3.groupByKey()
+//    /*println("b的个数是："+b.count())
+//    b.collect().foreach(f⇒{
+//    	println("b:-------------------------------")
+//      println(f)
+//      })*/
+//    
+//     //必须收集才可以将work上的信息拿回来
+//    /*
+//    var list:java.util.List[ReIdAttributesTemp]=new ArrayList[ReIdAttributesTemp]()
+//    b.collect().foreach(f⇒{
+//    	var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
+//    	  
+//    			val eachList=dbConnector.getPersonSimList(f._1)
+////    					println("eachList:"+eachList.size()+", "+eachList.toString())
 //    					if(eachList!=null){
-//    					    var eachRdd=	listToRdd(eachList)
-//    					    eachRdd.collect().foreach(f⇒{
-//    	              println("eachRdd:-----------foreach内部--------------------")
-//                    println(f)
-//                    })
-//    					    var eachOutRdd=eachRdd.map(f⇒(f.getTrackletID1,(f.getTrackletID2,f.getSim)))
-//    					    d.++(eachOutRdd)
-//    					    d.collect().foreach(f⇒{
-//    	              println("d:-----------foreach内部--------------------")
-//                    println(f)
-//                    })
+//    						
+//    						list.addAll(eachList)
 //    					}
-      dbConnector.finalize()
-    	dbConnector=null
-      eachList
-    })
-   /*e.collect().foreach(f⇒{
-    	for(i <- 0 until f.size()){
-    		println("e:-------------------------------")
-    	  println(f.get(i).toString())
-    	}
-      })*/
-    
-      val rdd6=e.flatMap(f⇒f.asScala).map(f⇒(f.getTrackletID1,(f.getTrackletID2,f.getSim)))
-//        for(i <- 0 until f.size()){
-////        (f.get(i).getTrackletID1,(f.get(i).getTrackletID2,f.get(i).getSim))
-//          f.get(i)
+//      dbConnector.finalize()
+//    	dbConnector=null
+//    })
+//    var rdd4: RDD[ReIdAttributesTemp]=null
+//    if(list!=null){
+//      
+////    	println("list:"+list.toString())
+//    	rdd4=listToRdd(list)
+//    }
+//    rdd4.collect().foreach(f⇒{
+//    	println("rdd4:-------------------------------")
+//      println(f)
+//      })*/
+//      
+////    var d:RDD[(String, (String, Double))]=null
+//    val e= b.map(f⇒{
+//      
+//    	var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
+//    	  
+//    			val eachList=dbConnector.getPersonSimList(f._1)
+////    					println("eachList:"+eachList.size()+", "+eachList.toString())
+////    					if(eachList!=null){
+////    					    var eachRdd=	listToRdd(eachList)
+////    					    eachRdd.collect().foreach(f⇒{
+////    	              println("eachRdd:-----------foreach内部--------------------")
+////                    println(f)
+////                    })
+////    					    var eachOutRdd=eachRdd.map(f⇒(f.getTrackletID1,(f.getTrackletID2,f.getSim)))
+////    					    d.++(eachOutRdd)
+////    					    d.collect().foreach(f⇒{
+////    	              println("d:-----------foreach内部--------------------")
+////                    println(f)
+////                    })
+////    					}
+//      dbConnector.finalize()
+//    	dbConnector=null
+//      eachList
+//    })
+//   /*e.collect().foreach(f⇒{
+//    	for(i <- 0 until f.size()){
+//    		println("e:-------------------------------")
+//    	  println(f.get(i).toString())
+//    	}
+//      })*/
+//    
+//      val rdd6=e.flatMap(f⇒f.asScala).map(f⇒(f.getTrackletID1,(f.getTrackletID2,f.getSim)))
+////        for(i <- 0 until f.size()){
+//////        (f.get(i).getTrackletID1,(f.get(i).getTrackletID2,f.get(i).getSim))
+////          f.get(i)
+////        }
+//        
+//      
+//      /*rdd6.collect().foreach(f⇒{
+//    	println("rdd6:-------------------------------")
+//      println(f)
+//      })*/
+//      //RDD[(String, Iterable[(String, Double)])]中的Iterable不能union
+////    val rdd5=b.union(rdd6)
+////    val rdd5=rdd3.union(rdd6)
+//    /*rdd5.collect().foreach(f⇒{
+//    	println("rdd5:-------------------------------")
+//      println(f)
+//      })*/
+//      //直接取top3是不对是，这样取出来的不是每一个节点的top3，而是这一次遍历的top3，而且这样，在后续插入数据库的时候，效率很低
+////    val result=rdd5.top(3)(Ordering.by[(String, (String,Double)), Double](_._2._2).reverse)  
+//    
+//    val rdd5=rdd3.union(rdd6).groupByKey()
+//   val c= rdd5.map(f⇒(f._1,(f._2.toList.sortBy(f⇒f._2))))
+//   /*c.collect().foreach(f⇒{
+//    	println("c:-------------------------------")
+//      println(f)
+//      })*/
+//   
+////      val TOP3startTime = System.currentTimeMillis();
+//    val result=c.map(f⇒(f._1,f._2.take(3)))
+////     val TOP3EndTime=System.currentTimeMillis();
+////    val result10=c.map(f⇒(f._1,f._2.take(10)))
+////    val TOP10EndTime=System.currentTimeMillis();
+////    println("Cost time of TOP3: " + (TOP3EndTime-TOP3startTime) + "ms")
+////    println("Cost time of TOP10: " + (TOP10EndTime-TOP3EndTime) + "ms")
+////    println("result的个数是："+result.count())
+//    
+//    println("topk 结束")
+//    
+////    val dbstartTime = System.currentTimeMillis();
+////    val resultArr= result.collect()
+////    val operationEndTime=System.currentTimeMillis();
+////    val operationEveryTime=operationEndTime - dbstartTime
+////    println("Cost time of every operation: " + (operationEveryTime) + "ms")
+//    //如果直接使用rdd5.top(3),则result不再是rdd，所以直接foreach，未来看是否再使用sc变成rdd
+//    result.foreachPartition(f⇒{
+//      
+//    	var dbConnector=new Neo4jConnector();
+//    	f.foreach(f⇒{
+////    		println("dbConnector:"+dbConnector.toString)
+//    		/*val db=new Factory[Neo4jConnector](){
+//    			
+//    			def produce() :Neo4jConnector={
+//    					return new Neo4jConnector()
+//    			}
+//    			
+//    		};
+//    		val dbConnSingleton=new SingletonUtil[Neo4jConnector](db, classOf[Neo4jConnector]);
+//    		val dbConnector=dbConnSingleton.getInst()
+//    */   
+//        for(i <- 0 until f._2.length){
+//            println("hour需要保存的结果是：[{'sim':"+f._2(i)._2+",'trackletID1':'"+f._1+"','trackletID2':'"+f._2(i)._1+"'}]")
+//            
+//             val outlist=dbConnector.addHourSimRel(f._1, f._2(i)._1, f._2(i)._2)
+//            println("hour保存完成的结果是："+outlist.toString())
 //        }
-        
-      
-      /*rdd6.collect().foreach(f⇒{
-    	println("rdd6:-------------------------------")
-      println(f)
-      })*/
-      //RDD[(String, Iterable[(String, Double)])]中的Iterable不能union
-//    val rdd5=b.union(rdd6)
-//    val rdd5=rdd3.union(rdd6)
-    /*rdd5.collect().foreach(f⇒{
-    	println("rdd5:-------------------------------")
-      println(f)
-      })*/
-      //直接取top3是不对是，这样取出来的不是每一个节点的top3，而是这一次遍历的top3，而且这样，在后续插入数据库的时候，效率很低
-//    val result=rdd5.top(3)(Ordering.by[(String, (String,Double)), Double](_._2._2).reverse)  
+//    		
+//      })
+//    	dbConnector.finalize()
+//    	dbConnector=null
+//    })
+//    result.unpersist()
+//    rdd3.unpersist()
+////     val dbendTime = System.currentTimeMillis();
+////     val dbEveryTime=dbendTime - dbstartTime
+////     println("Cost time of erery db: " + (dbEveryTime) + "ms")
+////     println("result:-------------------------------")
+////     return (operationEveryTime,dbEveryTime)
+//     
+    }
+    }
+  
+  
+  //glom and Broadcast
+  def glom(rdd: RDD[ReIdAttributesTemp]
+//      ,dbConnectorByte:Array[Byte]
+//  ,dbConnSingleton:SingletonUtil[GraphDatabaseConnector]
+  , args:Array[String]
+  )={
+    try{
+//    rdd.repartition(10)
+    //对于每个节点都得到KNN，目前没有高效的，可以避免重复计算的办法
+//    var rddWithIndex=rdd.zipWithIndex()
+    //直接使用rdd，不再再次赋给另一个rddWithIndex
+//    		var rddWithIndex=rdd
+    //这里原来是rddWithIndex
+//    var rddGlom=rddWithIndex.repartition(10).glom()
+      //小数据量需要.repartition(partition)
+    		var rddGlom=rdd.glom()
+    		 
     
-    val rdd5=rdd3.union(rdd6).groupByKey()
-   val c= rdd5.map(f⇒(f._1,(f._2.toList.sortBy(f⇒f._2))))
-   /*c.collect().foreach(f⇒{
-    	println("c:-------------------------------")
-      println(f)
-      })*/
-   
-//      val TOP3startTime = System.currentTimeMillis();
-    val result=c.map(f⇒(f._1,f._2.take(3)))
-//     val TOP3EndTime=System.currentTimeMillis();
-//    val result10=c.map(f⇒(f._1,f._2.take(10)))
-//    val TOP10EndTime=System.currentTimeMillis();
-//    println("Cost time of TOP3: " + (TOP3EndTime-TOP3startTime) + "ms")
-//    println("Cost time of TOP10: " + (TOP10EndTime-TOP3EndTime) + "ms")
-//    println("result的个数是："+result.count())
-    
-    println("topk 结束")
-    
-//    val dbstartTime = System.currentTimeMillis();
-//    val resultArr= result.collect()
-//    val operationEndTime=System.currentTimeMillis();
-//    val operationEveryTime=operationEndTime - dbstartTime
-//    println("Cost time of every operation: " + (operationEveryTime) + "ms")
-    //如果直接使用rdd5.top(3),则result不再是rdd，所以直接foreach，未来看是否再使用sc变成rdd
-    result.foreachPartition(f⇒{
-      
-    	var dbConnector=new Neo4jConnector();
-    	f.foreach(f⇒{
-//    		println("dbConnector:"+dbConnector.toString)
-    		/*val db=new Factory[Neo4jConnector](){
-    			
-    			def produce() :Neo4jConnector={
-    					return new Neo4jConnector()
-    			}
-    			
-    		};
-    		val dbConnSingleton=new SingletonUtil[Neo4jConnector](db, classOf[Neo4jConnector]);
-    		val dbConnector=dbConnSingleton.getInst()
-    */   
-        for(i <- 0 until f._2.length){
-            println("hour需要保存的结果是：[{'sim':"+f._2(i)._2+",'trackletID1':'"+f._1+"','trackletID2':'"+f._2(i)._1+"'}]")
-            
-             val outlist=dbConnector.addHourSimRel(f._1, f._2(i)._1, f._2(i)._2)
-            println("hour保存完成的结果是："+outlist.toString())
-        }
+//    println("checkpoint路径是:"+sc.getCheckpointDir)
+//    rddGlom.map(f⇒{
+//      var broadcastVar = sc.broadcast(f)
+//      EuDis(rdd,broadcastVar)
+//      broadcastVar.unpersist()
+//    })
     		
-      })
-    	dbConnector.finalize()
-    	dbConnector=null
-    })
-    result.unpersist()
-    rdd3.unpersist()
-//     val dbendTime = System.currentTimeMillis();
-//     val dbEveryTime=dbendTime - dbstartTime
-//     println("Cost time of erery db: " + (dbEveryTime) + "ms")
-//     println("result:-------------------------------")
-//     return (operationEveryTime,dbEveryTime)
+//    				var operationTime=0l 
+//    				var dbTime=0l
+//    				val count=sc.accumulator(0)
+    				
+    //而且由于每个都要得到KNN，所以就不需要汇总了
+//    val resultListBuf = scala.collection.mutable.ListBuffer.empty[Array[(String, String, Double)]]
+    
+    var rddArr=rddGlom.collect()
+    for(i <- 0 until rddArr.length){
+      var arr=rddArr(i)
+      if(arr.length>0){
+          val broadcastVar = sc.broadcast(arr)
+          
+      //rdd原来也是rddWithIndex
+      
+          val resultTime=everyOneNeedEuDis(rdd,broadcastVar, args)
+//      operationTime +=resultTime._1
+//      dbTime+=resultTime._2
      
+//      resultListBuf +=result
+          println(i+"次-----------------------------------结束")
+//      list.+:(broadcastVar)
+          broadcastVar.unpersist()
+//      for(j <-0 until arr.length ){
+//        print(arr(j).getTrackletID+",")
+//      }
+      }
     }
+    		/*
+    		 * 测试失败
+    		rddGlom.foreach(f⇒{
+//    		  while(f.hasNext){
+    		    var temp=f
+    		    for(j <-0 until temp.length){
+    		      
+    		    	println("temp:"+count+":"+temp(j).getTrackletID)
+    		    }
+//    		  f.foreach(f⇒{
+    		    val broadcastVar = sc.broadcast(temp)
+    		    val resultTime=everyOneNeedEuDis(rdd,broadcastVar, args)
+    		    operationTime +=resultTime._1
+            dbTime+=resultTime._2
+            count+=1
+            broadcastVar.unpersist()
+            println(count+"次----------------while-------------------结束")
+//    		  })
+//    		}
+    		  println(count+"次---------------foreachPartition-------------------结束")
+    		})
+    		println(count+"次----------------out-------------------结束")
+    		*/
+    		
+    println("打印的最终结果是：")
+//    println("Cost time of operation: " + (operationTime) + "ms")
+//    println("Cost time of db: " + (dbTime) + "ms");
+    }finally {
+      println("glom finally");
+//      dbConnSingleton.getInst.finalize()
+//      rdd.unpersist()
+//      sc.stop()
     }
+    //.reverse
+//     val resultListSort=resultListBuf.toList.flatMap(f⇒f).sortBy(f⇒(f._3))(Ordering.Double)
+//    resultListSort.foreach(println)
+    
+//    resultListBuf.foreach(f⇒f.foreach(println))
+//    return list
+  }
   
   //笛卡尔积和Broadcast，每一个都要有KNN
   def everyOneNeedEuDis(rdd: RDD[ReIdAttributesTemp],broad:Broadcast[Array[ReIdAttributesTemp]]
@@ -1574,7 +1639,7 @@ else if(args(0).equals("hour")){
     val rdd3=rdd2.map(r⇒(r._1._1._1,r._2._1._1,euclidean(r._1._1._2,r._2._1._2)))
     val rdd4=rdd3.first()
     val end =getCurrent_time
-    println("欧氏距离计算用时:"+end+"-"+start+"="+(end-start))
+//    println("欧氏距离计算用时:"+end+"-"+start+"="+(end-start))
 //    c.sortByKey().collect.foreach(println)
 //    val rdd4=rdd3.map(r⇒(r._3,r))
 //    rdd4.collect().foreach(println)
@@ -1583,7 +1648,7 @@ else if(args(0).equals("hour")){
     val startTop=getCurrent_time
     val re=rdd3.top(10)(Ordering.by[(String, String,Double), Double](_._3))  
     val endTop =getCurrent_time
-    println("topk用时:"+endTop+"-"+startTop+"="+(endTop-startTop))
+//    println("topk用时:"+endTop+"-"+startTop+"="+(endTop-startTop))
      re.foreach(println)
 //    println("-----------------------------------------------------")
 //    val rdd6=rdd4.sortByKey(false)
@@ -1758,37 +1823,17 @@ else if(args(0).equals("hour")){
 		return 1.0 / (1.0 + distance);*/
 
     
-//   val d= math.sqrt(x.zip(y).map(p => p._1 - p._2).map(d => d * d).sum)
-//   val d= math.sqrt(x.zip(y).map{case (x,y)=>(x-y)*(x-y)}.reduceLeft(_+_))
-//   println("距离是："+d)
-//   
-//   val sim=1.0 / (1.0 + d)
-//   println("相似度是："+sim)
-//   sim
   }
   
-  def foreachPrint(rdd:RDD[Simi]){
-    rdd.collect().foreach{Simi⇒{
-      print("---------------------scala test-------------" )
-      print(Simi.id1+","+Simi.id2+","+Simi.similar)
-      }
-    }
-    
-  }
+
   
   def main(args:Array[String]){
-    var x = Array(1.0f, 2.0f, 3.0f)
-    		var y = Array(2.0f, 3.0f, 5.0f)
-//    		euclidean(x, y)
-    		
+ 
+    		println(getCurrent_time())
   }
   
-  val now = new Date()  
-  def getCurrent_time():Long = {  
-        val a = now.getTime  
-        var str = a+""  
-        
-        str.toLong  
+  def getCurrent_time():String = {  
+     new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
   }
 }
 

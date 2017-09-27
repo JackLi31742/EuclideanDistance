@@ -55,4 +55,56 @@ object MapTest {
       println(f)
       })*/
   }
+  
+  //不能这么做
+  def doubleMap(){
+	  val points= Array(Array(8.0,6.9,4.7), Array(3.0,5.0,2.9), Array(2.6,7.0,6.9), Array(4.3,2.0,9.9), Array(1.0,2.4,2.9))
+    val points2 = Array(Array(9.0,3.9,4.7), Array(5.0,2.0,2.9), Array(3.6,5.0,6.9), Array(6.3,2.0,9.9), Array(2.0,2.4,2.9))
+    val rddpoints=sc.parallelize(points).repartition(2)
+     val rddpoints2=sc.parallelize(points2).repartition(2)
+     println("rddpoints的partitions的大小是:"+rddpoints.partitions.size)
+     println("rddpoints2的partitions的大小是:"+rddpoints2.partitions.size)
+     val result=rddpoints.map(f1⇒{
+       var buf2 = scala.collection.mutable.ArrayBuffer.empty[Double]
+       rddpoints2.foreach(f2⇒{
+        var distance = euclidean(f1,f2)
+        buf2.+=:(distance)
+       })
+       buf2
+     })
+     println("result的partitions的大小是:"+result.partitions.size)
+     result.collect().foreach(f⇒{
+    	println("result:-------------------------------")
+    	for(i <- 0 until f.length ){
+          print(f(i)+",")
+      }
+      })
+     
+  }
+  
+  def euclidean(x: Array[Double], y: Array[Double]) :Double= {
+//    val startTime = System.currentTimeMillis();
+   var distance = 0.0;
+
+		for (i <- 0 until x.length) {
+			var temp = Math.pow((x(i) - y(i)), 2);
+//			var temp = Math.pow(x(i), 2)+Math.pow(y(i), 2);
+			distance += temp;
+		}
+//		val EndTime=System.currentTimeMillis();
+//		println("Cost time of euclidean: " + (EndTime-startTime) + "ms")
+		
+		distance 
+		/*distance = Math.sqrt(distance);
+		return 1.0 / (1.0 + distance);*/
+
+    
+//   val d= math.sqrt(x.zip(y).map(p => p._1 - p._2).map(d => d * d).sum)
+//   val d= math.sqrt(x.zip(y).map{case (x,y)=>(x-y)*(x-y)}.reduceLeft(_+_))
+//   println("距离是："+d)
+//   
+//   val sim=1.0 / (1.0 + d)
+//   println("相似度是："+sim)
+//   sim
+  }
 }
