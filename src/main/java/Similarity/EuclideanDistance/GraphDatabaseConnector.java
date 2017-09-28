@@ -38,9 +38,12 @@ import entities.Tracklet;
  * @author Ken Yu, CRIPAC, 2016
  */
 public abstract class GraphDatabaseConnector implements Serializable{
-	public void finalize() throws Throwable {
-        
-    }
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4442820846952103102L;
+
+	public abstract void release();
     /**
      * Set the path of the directory saving the tracklet of a pedestrian.
      *
@@ -224,4 +227,6 @@ public abstract class GraphDatabaseConnector implements Serializable{
     
     //通过节点id得到相似度
     public abstract List<ReIdAttributesTemp> getPersonSimList(String nodeID1) throws NoSuchElementException;
+    
+    public abstract void copyNodes() ;
 }

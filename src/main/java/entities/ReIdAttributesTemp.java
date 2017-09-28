@@ -40,6 +40,7 @@ public class ReIdAttributesTemp implements Serializable {
     private String trackletID;
     private Long startTime;
     private float[] featureVector;
+    private String dataType;
     
     //父节点minute的start
     private Long start;
@@ -71,6 +72,14 @@ public class ReIdAttributesTemp implements Serializable {
 
 	
    
+
+	public String getDataType() {
+		return dataType;
+	}
+
+	public void setDataType(String dataType) {
+		this.dataType = dataType;
+	}
 
 	public String[] getTrackletID1s() {
 		return trackletID1s;

@@ -156,7 +156,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //		System.out.println("classpathString:"+classpathString);
 		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
 		p.init();
-		p.addToContext(args);
+		p.dbConnector.copyNodes();
+//		p.addToContext(args);
 //		MapTest.doubleMap();
 //		matrix m=new matrix();
 //		m.testmatrix();
@@ -191,12 +192,6 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //			List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(new Minute());
 			
-		
-		
-		
-		
-		
-
 						if (list!=null) {
 							
 							if (list.size()>0) {
@@ -265,10 +260,13 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 			
 						
 			}
+		}catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			try {
+				dbConnector.release();
 				System.out.println("addToContext finally");
-//				dbConnector.finalize();
 			} catch (Throwable e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

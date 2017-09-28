@@ -280,7 +280,7 @@ class Similarity2 extends Serializable{
             }
           }
         })
-        	dbConnector.finalize()
+        	dbConnector.release()
 
     	    dbConnector=null
 //    	println("内层foreach结束---------------------------")
@@ -962,7 +962,7 @@ else if(args(0).equals("hour")){
 //                    println(f)
 //                    })
 //    					}
-      dbConnector.finalize()
+      dbConnector.release()
     	dbConnector=null
       eachList
     })
@@ -1041,7 +1041,7 @@ else if(args(0).equals("hour")){
         }
     		
       })
-    	dbConnector.finalize()
+    	dbConnector.release()
     	dbConnector=null
     })
     result.unpersist()

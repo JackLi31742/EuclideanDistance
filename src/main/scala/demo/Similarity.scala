@@ -114,7 +114,9 @@ class Similarity extends Serializable{
     var buf1 = scala.collection.mutable.ArrayBuffer.empty[String]
     var buf2 = scala.collection.mutable.ArrayBuffer.empty[Float]
     var result = scala.collection.mutable.ArrayBuffer.empty[Tuple2[Array[String], Array[Float]]]
-    for (i <- 0 until arr.length) {
+    var arrlen=arr.length
+    println("arrlen的大小是:"+arrlen)
+    for (i <- 0 until arrlen) {
       var reIdAttributesTemp = arr(i)
       var trackletID = reIdAttributesTemp.getTrackletID
       var featureVector = reIdAttributesTemp.getFeatureVector
@@ -701,7 +703,7 @@ if(args(0).equals("minute")){
     
 //    val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
-//    println("result的个数是："+result.count())
+    println("result的个数是："+result.count())
 //    result.collect().foreach(f⇒{
 //    	println("result:-------------------------------")
 //      println(f)
@@ -711,9 +713,9 @@ if(args(0).equals("minute")){
 //    println("Cost time of every operation: " + (operationEveryTime) + "ms")
 
     println("topk 结束")
-    //测试不收集会不会执行add操作
-    //闭包，没用的
- /*   var i=0
+      //测试不收集会不会执行add操作
+      //闭包，没用的
+      /*   var i=0
     
     //依然是spark任务
     result.foreachPartition(f⇒{
@@ -754,58 +756,81 @@ if(args(0).equals("minute")){
     	println("内层foreach结束---------------------------")
       
     })*/
-    //foreach好像不再是spark任务
-      result.foreachPartition(f⇒{
-    	  
-    	  var dbConnector:GraphDatabaseConnector=new Neo4jConnector();
-    	  val logger:Logger=new ConsoleLogger()
-      try{
-      	f.foreach(f⇒{
-      	  //循环的次数就是节点的个数
-  //    		println("dbConnector-"+i+":"+dbConnector.toString)
-  //      DbConnector.init()
-  //    	val dbConnector = DbConnector.getInstance()
-  //    		val db=new Factory[Neo4jConnector](){
-  //    			
-  //    			def produce() :Neo4jConnector={
-  //    					return new Neo4jConnector()
-  //    			}
-  //    			
-  //    		};
-  //    		val dbConnSingleton=new SingletonUtil[Neo4jConnector](db, classOf[Neo4jConnector]);
-  //    		val dbConnector=dbConnSingleton.getInst()   
-          for(i <- 0 until f._2.length){
-              logger.info("min需要保存的结果是：[{'sim':"+f._2(i)._2+",'trackletID1':'"+f._1+"','trackletID2':'"+f._2(i)._1+"'}]")
-  //            println("dbConnector的开启状态："+dbConnector.isOpen)
-              if(!(f._2(i)._2.toString().equals("null"))){
-            	    var outlist:scala.collection.immutable.List[ReIdAttributesTemp]=null
-                	try{
-                	  outlist=dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList
-                		logger.info("min保存完成的结果是："+outlist.toString())
-                  }catch{
-                    case e: Exception => println("失败了一次，exception caught: " + e);
-                    outlist=dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
-                    logger.info("min再次保存完成的结果是："+outlist.toString())
-                  }finally {
-//                    logger.info("失败了一次，再次保存")
-                  }
-              }
-          }
-  //        		i =i+ 1
-        })
-      }catch{
-        case e: Exception => logger.info("彻底失败了，exception caught: " + e);
-      }
-      finally {
+      //foreach好像不再是spark任务
+      result.foreachPartition(f ⇒ {
+
+        var dbConnector: GraphDatabaseConnector = new Neo4jConnector();
+        val logger: Logger = new ConsoleLogger()
+        var errorlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
+//        if (!(dbConnector.isOpen())) {
+//          logger.info("session 关闭了")
+//        }
+        var flag = true
         
-    	  dbConnector.finalize()
-    	  
-    	  dbConnector=null
-      }
-//    	println("内层foreach结束---------------------------")
-      
-    })
-    result.unpersist()
+//        if (flag) {
+          try {
+            f.foreach(f ⇒ {
+            if (dbConnector == null) {
+               flag = false
+              }
+            if (flag) {
+              for (i <- 0 until f._2.length) {
+                //            println("dbConnector的开启状态："+dbConnector.isOpen)
+                if (!(f._2(i)._2.toString().equals("null"))) {
+                  logger.info("min需要保存的结果是：[{'sim':" + f._2(i)._2 + ",'trackletID1':'" + f._1 + "','trackletID2':'" + f._2(i)._1 + "'}]")
+                  var outlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
+                  try {
+                    outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList
+                    logger.info("min保存完成的结果是：" + outlist.toString())
+                  } catch {
+                    case e: Exception =>
+                      println("失败了一次，exception caught: " + e);
+//                      if (!(dbConnector.isOpen())) {
+//                        logger.info("session 关闭了,在第一次catch中")
+//                      }
+                      try {
+                        outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
+                        logger.info("min再次保存完成的结果是：" + outlist.toString())
+                      } catch {
+                        case e: Exception =>
+                          println("失败了两次，exception caught: " + e);
+//                          if (!(dbConnector.isOpen())) {
+//                            logger.info("session 关闭了,在第二次catch中")
+//                          }
+                          outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
+                          logger.info("min第三次保存完成的结果是：" + outlist.toString())
+                      }
+                  }
+                  if (outlist == null) {
+                    var reIdAttributesTemp: ReIdAttributesTemp = new ReIdAttributesTemp
+                    reIdAttributesTemp.setTrackletID1(f._1)
+                    reIdAttributesTemp.setTrackletID2(f._2(i)._1)
+                    reIdAttributesTemp.setSim(f._2(i)._2)
+                    errorlist.::(reIdAttributesTemp)
+                  }
+                }
+              }
+            }
+            })
+          } catch {
+            case e: Exception =>logger.info("彻底失败了，exception caught: " + e);
+//              if (!(dbConnector.isOpen())) {
+//                logger.info("session 关闭了,在第三次catch中")
+//              }
+//            if (flag) {
+              if (errorlist != null) {
+                logger.info("min未保存成功的结果是：" + errorlist.toString())
+              }
+//              }
+          } finally {
+
+            dbConnector.release()
+
+            dbConnector = null
+          }
+//        }
+      })
+      result.unpersist()
     
 //        		println("i:"+i)
 //    println("外层foreachPartition结束---------------------------")
@@ -1320,7 +1345,7 @@ if(args(0).equals("minute")){
         }
 //        		i =i+ 1
       })
-        	dbConnector.finalize()
+        	dbConnector.release()
 
     	    dbConnector=null
 //    	println("内层foreach结束---------------------------")
@@ -1462,7 +1487,7 @@ else if(args(0).equals("hour")){
 //                    println(f)
 //                    })
 //    					}
-      dbConnector.finalize()
+      dbConnector.release()
     	dbConnector=null
       eachList
     })
@@ -1541,7 +1566,7 @@ else if(args(0).equals("hour")){
         }
     		
       })
-    	dbConnector.finalize()
+    	dbConnector.release()
     	dbConnector=null
     })
     result.unpersist()
