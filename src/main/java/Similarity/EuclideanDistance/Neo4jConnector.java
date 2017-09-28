@@ -1395,10 +1395,11 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 					Feature feature = new FeatureMSCAN(featureBytes);
 					// System.out.println(camID+","+id+","+startTime+","+feature.getVector());
 					float[] vector=feature.getVector();
+					float[] outvector=new float[vector.length];
 					for (int i = 0; i < vector.length; i++) {
-						vector[i]=vector[i]+1;
+						outvector[i]=vector[i]+1;
 					}
-					reIdAttributesTemp.setFeatureVector(vector);
+					reIdAttributesTemp.setFeatureVector(outvector);
 
 				}
 				if (!trackletID.equals("null")) {
@@ -1434,11 +1435,12 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				String featureBase64Str = Base64.encodeBase64String(featureBytes);
 				StatementResult result =tx.run("MERGE (c:Person{c.trackletID:{trackletID},c.dataType:{dataType},c.reidFeature:{reidFeature}}) return c;"
 								,Values.parameters("trackletID", trackletID,"dataType",dataType,"reidFeature",featureBase64Str));
-				while (result.hasNext()) {
-					Record record = result.next();
-				}
-				tx.run("MATCH (a:Minute {start: {start}}), (b:Person {trackletID: {trackletID}}) MERGE (a)-[:INCLUDES_PERSON]-(b);"
-		                ,Values.parameters("start", start, "trackletID", trackletID));
+//				while (result.hasNext()) {
+//					Record record = result.next();
+//				}
+				tx.success();
+//				tx.run("MATCH (a:Minute {start: {start}}), (b:Person {trackletID: {trackletID}}) MERGE (a)-[:INCLUDES_PERSON]-(b);"
+//		                ,Values.parameters("start", start, "trackletID", trackletID));
 				System.out.println("执行成功"+i);
 			}
 		} catch (Exception e) {
