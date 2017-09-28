@@ -1424,6 +1424,8 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 			for (int i = 0; i < 100; i++) {
 				list2.addAll(list);
 			}
+			
+			
 			for (int i = 0; i < list2.size(); i++) {
 				ReIdAttributesTemp reIdAttributesTemp =list2.get(i);
 				String trackletID = reIdAttributesTemp.getTrackletID();
@@ -1433,7 +1435,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				Feature feature = new FeatureMSCAN(featureVector);
 				byte[] featureBytes =feature.getBytes();
 				String featureBase64Str = Base64.encodeBase64String(featureBytes);
-				StatementResult result =tx.run("MERGE (c:Person{c.trackletID:{trackletID},c.dataType:{dataType},c.reidFeature:{reidFeature}}) return c;"
+				tx.run("MERGE (c:Person{c.trackletID:{trackletID},c.dataType:{dataType},c.reidFeature:{reidFeature}}) return c;"
 								,Values.parameters("trackletID", trackletID,"dataType",dataType,"reidFeature",featureBase64Str));
 //				while (result.hasNext()) {
 //					Record record = result.next();
