@@ -48,7 +48,9 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	 * 
 	 */
 	private static final long serialVersionUID = -1741972648494898750L;
-	Driver driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
+	Driver driver = GraphDatabase.driver(
+//			"bolt://172.18.33.37:7687",
+			"bolt://172.18.33.39:7687",
             AuthTokens.basic("neo4j", "casia@1234"));
 //	Session session = driver.session();
 	/*private  Driver driver ;
@@ -1376,11 +1378,11 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	public void copyNodes() {
 		// TODO Auto-generated method stub
 		Session session = driver.session();
-		Transaction tx = session.beginTransaction();
+//		Transaction tx = session.beginTransaction();
 		List<ReIdAttributesTemp> list = new ArrayList<>();
 		List<ReIdAttributesTemp> list2 = new ArrayList<>();
 		try {
-			StatementResult result = tx.run(
+			StatementResult result = session.run(
 					"MATCH (a:Hour)-[:HAS_MIN]-(b:Minute)-[:INCLUDES_PERSON]-(c:Person{dataType:'track-reid-20170907'})  "
 							+ "where c.reidFeature is not null return b.start,c.trackletID,c.reidFeature,c.dataType order by a.hour;");
 			while (result.hasNext()) {
@@ -1412,18 +1414,23 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				// list.add(feature.getVector());
 				list.add(reIdAttributesTemp);
 			}
-			tx.success();
+//			tx.success();
 		} catch (Exception e) {
 			// TODO: handle exception
 		} finally {
 //			tx.close();
 //			 session.close();
 		}
+		for (int i = 0; i < 10; i++) {
+			list2.addAll(list);
+		}
+		//打印list
+		for (ReIdAttributesTemp reIdAttributesTemp : list2) {
+			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getDataType()+","+reIdAttributesTemp.getFeatureVector().length);
+		}
 		
+		System.out.println("-------------------------");
 		try {
-			for (int i = 0; i < 100; i++) {
-				list2.addAll(list);
-			}
 			
 			
 			for (int i = 0; i < list2.size(); i++) {
@@ -1435,12 +1442,12 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				Feature feature = new FeatureMSCAN(featureVector);
 				byte[] featureBytes =feature.getBytes();
 				String featureBase64Str = Base64.encodeBase64String(featureBytes);
-				tx.run("MERGE (c:Person{c.trackletID:{trackletID},c.dataType:{dataType},c.reidFeature:{reidFeature}}) return c;"
+				session.run("CREATE (c:Person{c.trackletID:{trackletID},c.dataType:{dataType},c.reidFeature:{reidFeature}}) return c;"
 								,Values.parameters("trackletID", trackletID,"dataType",dataType,"reidFeature",featureBase64Str));
 //				while (result.hasNext()) {
 //					Record record = result.next();
 //				}
-				tx.success();
+//				tx.success();
 //				tx.run("MATCH (a:Minute {start: {start}}), (b:Person {trackletID: {trackletID}}) MERGE (a)-[:INCLUDES_PERSON]-(b);"
 //		                ,Values.parameters("start", start, "trackletID", trackletID));
 				System.out.println("执行成功"+i);
@@ -1448,9 +1455,31 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 		} catch (Exception e) {
 			// TODO: handle exception
 		}finally {
-			tx.close();
+//			tx.close();
 			 session.close();
 		}
+	}
+
+	@Override
+	public void restore() {
+		// TODO Auto-generated method stub
+		Session session = driver.session();
+		List<String> pathlist = new ArrayList<>();
+		StatementResult result = session.run("MATCH (c:Person) return c.path;");
+		while (result.hasNext()) {
+			Record record = result.next();
+			String path = record.get("c.path").asString();
+			pathlist.add(path);
+		}
+		for (int i = 0; i < pathlist.size(); i++) {
+			String path=pathlist.get(i);
+			String paths[]=path.split("-");
+			String id=paths[0]+"-"+paths[4]+"-"+paths[5]+"_"+paths[6];
+			System.out.println(path);
+			System.out.println(id);
+			System.out.println("---------------------");
+		}
+		session.close();
 	}
 	
 	

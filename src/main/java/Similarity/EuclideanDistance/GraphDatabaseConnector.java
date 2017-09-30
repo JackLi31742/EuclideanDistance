@@ -229,4 +229,6 @@ public abstract class GraphDatabaseConnector implements Serializable{
     public abstract List<ReIdAttributesTemp> getPersonSimList(String nodeID1) throws NoSuchElementException;
     
     public abstract void copyNodes() ;
+    
+    public abstract void restore();
 }
