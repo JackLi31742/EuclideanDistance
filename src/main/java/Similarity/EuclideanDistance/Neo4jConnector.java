@@ -10,6 +10,9 @@
 
 package Similarity.EuclideanDistance;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -49,8 +52,8 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	 */
 	private static final long serialVersionUID = -1741972648494898750L;
 	Driver driver = GraphDatabase.driver(
-//			"bolt://172.18.33.37:7687",
-			"bolt://172.18.33.39:7687",
+			"bolt://172.18.33.37:7687",
+//			"bolt://172.18.33.39:7687",
             AuthTokens.basic("neo4j", "casia@1234"));
 //	Session session = driver.session();
 	/*private  Driver driver ;
@@ -1288,11 +1291,11 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	
 	@Override
 	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Minute minute) throws NoSuchElementException {
-		 Session session = driver.session();
-		Transaction tx = session.beginTransaction();
+		Session session = driver.session();
+//		Transaction tx = session.beginTransaction();
 		List<ReIdAttributesTemp> list = new ArrayList<>();
 		try {
-			StatementResult result = tx.run(
+			StatementResult result = session.run(
 					"MATCH (a:Minute" + "{start:{start}}"
 							+ ")-[:INCLUDES_PERSON]-(b:Person{dataType:'track-reid-20170907'})  "
 							+ "where b.reidFeature is not null return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start;",
@@ -1321,11 +1324,11 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				reIdAttributesTemp.setStart(start);
 				list.add(reIdAttributesTemp);
 			}
-			tx.success();
+//			tx.success();
 		} catch (Exception e) {
 			// TODO: handle exception
 		} finally {
-			tx.close();
+//			tx.close();
 			 session.close();
 		}
 		return list;
@@ -1481,7 +1484,33 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 		}
 		session.close();
 	}
-	
-	
+	@Override
+	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(){
+		String sql="MATCH (c:Person{dataType:'20170930'})  "
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature limit 200;";
+			Session session = driver.session();
+			List<ReIdAttributesTemp> list=new ArrayList<>();
+			StatementResult result = session.run(sql);
+			while (result.hasNext()) {
+				Record record = result.next();
+				ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
+				String trackletID = record.get("c.trackletID").asString();
+				String featureBase64Str = record.get("c.reidFeature").asString();
+				if (!featureBase64Str.equals("null")) {
+					byte[] featureBytes = Base64.decodeBase64(featureBase64Str);
+					Feature feature = new FeatureMSCAN(featureBytes);
+					float[] vector=feature.getVector();
+					reIdAttributesTemp.setFeatureVector(vector);
+				}
+				if (!trackletID.equals("null")) {
+
+					reIdAttributesTemp.setTrackletID(trackletID);
+				}
+				list.add(reIdAttributesTemp);
+			}
+			session.close();
+			return list;
+		
+	}
 	
 }

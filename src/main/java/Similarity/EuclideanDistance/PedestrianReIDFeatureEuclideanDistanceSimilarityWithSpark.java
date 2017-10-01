@@ -24,6 +24,7 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 	public SingletonUtil<GraphDatabaseConnector> dbConnSingleton=null;
 	Similarity similarity=null;
 	Similarity2 similarity2=null;
+//	Neo4jDaoJdbc neo4jDaoJdbc = null;
 //	public final Driver driver = GraphDatabase.driver("bolt://172.18.33.37:7687",
 //            AuthTokens.basic("neo4j", "casia@1234"));
 //	public final Session session = driver.session();
@@ -33,6 +34,9 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //		dbConnSingleton=new SingletonUtil<>(Neo4jConnector::new, Neo4jConnector.class);
 //		dbConnector=dbConnSingleton.getInst();
 		dbConnector=new Neo4jConnector();
+//		neo4jDaoJdbc = new Neo4jDaoJdbc();
+//		neo4jDaoJdbc.loadConfig();
+//		neo4jDaoJdbc.getConnection();
 		similarity=new Similarity();
 //		similarity2=new Similarity2();
 	//	final Logger logger = loggerSingleton.getInst();
@@ -154,20 +158,20 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //		String classpathString=System.getProperty("java.class.path");
 //		System.out.println("classpathString:"+classpathString);
-//		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
-//		p.init();
-//		p.addToContext(args);
-		Neo4jDaoJdbc neo4jDaoJdbc = new Neo4jDaoJdbc();
-		neo4jDaoJdbc.loadConfig();
-		neo4jDaoJdbc.getConnection();
-		try {
-			neo4jDaoJdbc.copyNodes();
-		} catch (Exception e) {
-			// TODO: handle exception
-		}finally {
-			neo4jDaoJdbc.close();
-			
-		}
+		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
+		p.init();
+		p.addToContext(args);
+//		Neo4jDaoJdbc neo4jDaoJdbc = new Neo4jDaoJdbc();
+//		neo4jDaoJdbc.loadConfig();
+//		neo4jDaoJdbc.getConnection();
+//		try {
+//			neo4jDaoJdbc.copyNodes();
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//		}finally {
+//			neo4jDaoJdbc.close();
+//			
+//		}
 //		GraphDatabaseConnector dbConnector=new Neo4jConnector();
 //		dbConnector.copyNodes();
 //		dbConnector.restore();
@@ -193,8 +197,13 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		try {
 			if (args[0].equals("minute")) {
 			
-		
-				List<Minute> minList=dbConnector.getMinutes();
+				long dbstartTime = System.currentTimeMillis();
+//				List<ReIdAttributesTemp> list=neo4jDaoJdbc.getPedestrianReIDFeatureList();
+				List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList();
+				long dbendTime = System.currentTimeMillis();
+				System.out.println("加载时间 : " + (dbendTime - dbstartTime) + "ms");
+				getSim(list,args);
+				/*List<Minute> minList=dbConnector.getMinutes();
 			
 				if (minList!=null) {
 			
@@ -212,11 +221,11 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 			//				System.out.println(minList.get(i)+":"+list.size());
 			
 								try {
-									/*for (int j = 0; j <list.size(); j++) {
+									for (int j = 0; j <list.size(); j++) {
 										System.out.println("out:--------------------------------");
 										System.out.println(list.get(j).toString());
 										
-									}*/
+									}
 									getSim(list,args);
 								} catch (Exception e) {
 									// TODO Auto-generated catch block
@@ -225,8 +234,9 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 							}
 						}
 					}
-				}
-			}if (args[0].equals("hour")) {
+				}*/
+			}
+			if (args[0].equals("hour")) {
 
 				
 				

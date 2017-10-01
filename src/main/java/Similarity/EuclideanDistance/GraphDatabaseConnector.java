@@ -231,4 +231,6 @@ public abstract class GraphDatabaseConnector implements Serializable{
     public abstract void copyNodes() ;
     
     public abstract void restore();
+    
+    public abstract List<ReIdAttributesTemp> getPedestrianReIDFeatureList();
 }

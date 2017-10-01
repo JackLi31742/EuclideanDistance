@@ -1,31 +1,26 @@
 package Similarity.EuclideanDistance;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Values;
 
 import entities.Feature;
 import entities.FeatureMSCAN;
 import entities.ReIdAttributesTemp;
+import scala.Tuple3;
 
 /* 环境
  * 1.JDK7
@@ -44,7 +39,11 @@ import entities.ReIdAttributesTemp;
  * jdbc.url      = jdbc:neo4j:bolt://localhost
  */
 
-public class Neo4jDaoJdbc {
+public class Neo4jDaoJdbc implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5157847407490829460L;
 	private static final Logger log = Logger.getLogger(Neo4jDaoJdbc.class);// 日志文件
 	// 表示定义数据库的用户名
 	private String USERNAME;
@@ -226,8 +225,8 @@ public class Neo4jDaoJdbc {
 	public void copyNodes() {
 		List<ReIdAttributesTemp> list = new ArrayList<>();
 		List<ReIdAttributesTemp> list2 = new ArrayList<>();
-		String sql="MATCH (c:Person)  "
-							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature ;";
+		String sql="MATCH (c:Person{dataType:'20170930'})  "
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature,c.dataType limit 5;";
 		PreparedStatement ps=null;
 		ResultSet rs =null;
 		try {
@@ -246,7 +245,7 @@ public class Neo4jDaoJdbc {
 //        				Long start = rs.getLong(1);
         				String trackletID = rs.getString(1);
         				String featureBase64Str = rs.getString(2);
-//        				String dataType = rs.getString(4);
+        				String dataType = rs.getString(3);
         				if (!featureBase64Str.equals("null")) {
         					byte[] featureBytes = Base64.decodeBase64(featureBase64Str);
         					Feature feature = new FeatureMSCAN(featureBytes);
@@ -258,7 +257,7 @@ public class Neo4jDaoJdbc {
         					reIdAttributesTemp.setTrackletID(trackletID);
         				}
 //        				reIdAttributesTemp.setStart(start);
-//        				reIdAttributesTemp.setDataType(dataType);
+        				reIdAttributesTemp.setDataType(dataType);
         				list.add(reIdAttributesTemp);  
                     }  
             	}else{  
@@ -277,13 +276,14 @@ public class Neo4jDaoJdbc {
     		}  
 		
 		//打印list
-		/*for (ReIdAttributesTemp reIdAttributesTemp : list) {
-			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length);
-		}*/
 		//copy
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < 3; i++) {
 			list2.addAll(list);
 		}
+		for (ReIdAttributesTemp reIdAttributesTemp : list2) {
+			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length);
+		}
+		System.out.println("-----------------------------");
 		int len=list2.size();
 		log.info("len:"+len);
 		int k=1000;
@@ -303,7 +303,7 @@ public class Neo4jDaoJdbc {
 			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length);
 		}*/
 		System.out.println("-------------------------");
-		String outSql="CREATE (c:Person) set c.trackletID={1},c.reidFeature={2} ;";
+		String outSql="CREATE (c:Person) set c.trackletID={1},c.reidFeature={2},c.dataType={3} ;";
 //				tx.run("MATCH (a:Minute {start: {start}}), (b:Person {trackletID: {trackletID}}) MERGE (a)-[:INCLUDES_PERSON]-(b);"
 //		                ,Values.parameters("start", start, "trackletID", trackletID));
 		PreparedStatement psOut =null;
@@ -315,18 +315,18 @@ public class Neo4jDaoJdbc {
 					ReIdAttributesTemp reIdAttributesTemp =list2.get(i);
 					String trackletID = reIdAttributesTemp.getTrackletID();
 	//				Long start=reIdAttributesTemp.getStart();
-	//				String dataType=reIdAttributesTemp.getDataType();
+					String dataType=reIdAttributesTemp.getDataType();
 					float[] featureVector=reIdAttributesTemp.getFeatureVector();
 					Feature feature = new FeatureMSCAN(featureVector);
 					byte[] featureBytes =feature.getBytes();
 					String featureBase64Str = Base64.encodeBase64String(featureBytes);
 					psOut.setString(1, trackletID);
-	//				psOut.setString(2, dataType);
 					psOut.setString(2, featureBase64Str);
+					psOut.setString(3, dataType);
 					psOut.addBatch();
 				}
 				int[] count=psOut.executeBatch();
-				log.info("执行成功:"+j+","+count.length);
+				log.info("执行成功:"+j+"-----:-------"+count.length);
 				psOut.clearBatch();
 			}
 		} catch (Exception e) {
@@ -341,5 +341,137 @@ public class Neo4jDaoJdbc {
 					e.printStackTrace();
 				}
 		}
+	}
+	
+	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(){
+		List<ReIdAttributesTemp> list = new ArrayList<>();
+		String sql="MATCH (c:Person)  "
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature limit 100;";
+		PreparedStatement ps=null;
+		ResultSet rs =null;
+		try {
+			ps = conn.prepareStatement(sql);
+			rs = ps.executeQuery();
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+            try {  
+            	if(rs!=null){  
+                    while(rs.next()){  
+                        //遍历每行元素的内容  
+                    	ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
+        				String trackletID = rs.getString(1);
+        				String featureBase64Str = rs.getString(2);
+        				if (!featureBase64Str.equals("null")) {
+        					byte[] featureBytes = Base64.decodeBase64(featureBase64Str);
+        					Feature feature = new FeatureMSCAN(featureBytes);
+        					float[] vector=feature.getVector();
+        					reIdAttributesTemp.setFeatureVector(vector);
+        				}
+        				if (!trackletID.equals("null")) {
+        					reIdAttributesTemp.setTrackletID(trackletID);
+        				}
+        				list.add(reIdAttributesTemp);  
+                    }
+            	}else{  
+            		System.out.println("结果集不存在！");  
+            	}
+            } catch (SQLException e) {  
+                e.printStackTrace();  
+            }finally {
+            	try {
+					rs.close();
+					ps.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+    		}
+			return list;
+		
+	}
+	
+	public List<ReIdAttributesTemp> addSimRel(scala.collection.immutable.List<Tuple3<String, scala.Double, String>> list) {
+		log.info("该次保存的list大小是：" + list.size());
+		long dbstartTime = System.currentTimeMillis();
+		String sql = "MATCH (a:Person {trackletID: {1}}), (b:Person {trackletID: {2}}) "
+				+ "MERGE (a)-[r:Similarity]-(b) set r.Minute={3} ";
+		PreparedStatement ps = null;
+		try {
+			ps = conn.prepareStatement(sql);
+			for (int i = 0; i < list.size(); i++) {
+				Tuple3<String, scala.Double, String> tuple = list.apply(i);
+				String nodeID1 = tuple._1();
+				String nodeID2 = tuple._3();
+				double SimRel = tuple._2().toDouble();
+				ps.setString(1, nodeID1);
+				ps.setString(2, nodeID2);
+				ps.setDouble(3, SimRel);
+				ps.addBatch();
+			}
+			int[] count = ps.executeBatch();
+			log.info("执行成功的个数是:" + count.length);
+			ps.clearBatch();
+		} catch (Exception e) {
+			// TODO: handle exception
+			log.info(e);
+		} finally {
+			try {
+				ps.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		long dbendTime = System.currentTimeMillis();
+		System.out.println("Cost batch everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
+		
+		String Outsql = "MATCH (a:Person)-[r:Similarity]-(b:Person) return a.trackletID,b.trackletID,r.Minute";
+		List<ReIdAttributesTemp> outlist = new ArrayList<>();
+		PreparedStatement psOut = null;
+		ResultSet rs = null;
+		try {
+			psOut = conn.prepareStatement(Outsql);
+			rs = psOut.executeQuery();
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			if (rs != null) {
+				while (rs.next()) {
+					// 遍历每行元素的内容
+					ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
+					String trackletID1 = rs.getString(1);
+					String trackletID2 = rs.getString(2);
+					Double sim = rs.getDouble(3);
+					if (!(trackletID1.equals("null"))) {
+						reIdAttributesTemp.setTrackletID1(trackletID1);
+					}
+					if (!(trackletID2.equals("null"))) {
+						reIdAttributesTemp.setTrackletID2(trackletID2);
+					}
+
+					reIdAttributesTemp.setSim(sim);
+					outlist.add(reIdAttributesTemp);
+				}
+			} else {
+				System.out.println("结果集不存在！");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+				psOut.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return outlist;
+
 	}
 }
