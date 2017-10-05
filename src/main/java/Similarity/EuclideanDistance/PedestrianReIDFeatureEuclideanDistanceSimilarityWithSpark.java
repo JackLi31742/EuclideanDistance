@@ -158,20 +158,20 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //		String classpathString=System.getProperty("java.class.path");
 //		System.out.println("classpathString:"+classpathString);
-		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
-		p.init();
-		p.addToContext(args);
-//		Neo4jDaoJdbc neo4jDaoJdbc = new Neo4jDaoJdbc();
-//		neo4jDaoJdbc.loadConfig();
-//		neo4jDaoJdbc.getConnection();
-//		try {
-//			neo4jDaoJdbc.copyNodes();
-//		} catch (Exception e) {
-//			// TODO: handle exception
-//		}finally {
-//			neo4jDaoJdbc.close();
-//			
-//		}
+//		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
+//		p.init();
+//		p.addToContext(args);
+		Neo4jDaoJdbc neo4jDaoJdbc = new Neo4jDaoJdbc();
+		neo4jDaoJdbc.loadConfig();
+		neo4jDaoJdbc.getConnection();
+		try {
+			neo4jDaoJdbc.copyNodes();
+		} catch (Exception e) {
+			// TODO: handle exception
+		}finally {
+			neo4jDaoJdbc.close();
+			
+		}
 //		GraphDatabaseConnector dbConnector=new Neo4jConnector();
 //		dbConnector.copyNodes();
 //		dbConnector.restore();

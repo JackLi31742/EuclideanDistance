@@ -225,8 +225,9 @@ public class Neo4jDaoJdbc implements Serializable{
 	public void copyNodes() {
 		List<ReIdAttributesTemp> list = new ArrayList<>();
 		List<ReIdAttributesTemp> list2 = new ArrayList<>();
-		String sql="MATCH (c:Person{dataType:'20170930'})  "
-							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature,c.dataType limit 5;";
+		List<ReIdAttributesTemp> list3 = new ArrayList<>();
+		String sql="MATCH (c:Person{dataType:'lijun20170927'})  "
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature,c.dataType;";
 		PreparedStatement ps=null;
 		ResultSet rs =null;
 		try {
@@ -242,7 +243,6 @@ public class Neo4jDaoJdbc implements Serializable{
                     while(rs.next()){  
                         //遍历每行元素的内容  
                     	ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
-//        				Long start = rs.getLong(1);
         				String trackletID = rs.getString(1);
         				String featureBase64Str = rs.getString(2);
         				String dataType = rs.getString(3);
@@ -256,7 +256,6 @@ public class Neo4jDaoJdbc implements Serializable{
         				if (!trackletID.equals("null")) {
         					reIdAttributesTemp.setTrackletID(trackletID);
         				}
-//        				reIdAttributesTemp.setStart(start);
         				reIdAttributesTemp.setDataType(dataType);
         				list.add(reIdAttributesTemp);  
                     }  
@@ -270,39 +269,51 @@ public class Neo4jDaoJdbc implements Serializable{
 					rs.close();
 					ps.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
     		}  
 		
 		//打印list
+//            for (ReIdAttributesTemp reIdAttributesTemp : list) {
+//    			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length+","+reIdAttributesTemp.getFeatureVector()[0]);
+//    		}
+//            System.out.println("-----------------------------");
 		//copy
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 1000; i++) {
 			list2.addAll(list);
 		}
-		for (ReIdAttributesTemp reIdAttributesTemp : list2) {
-			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length);
-		}
-		System.out.println("-----------------------------");
+		list.clear();
+//		for (ReIdAttributesTemp reIdAttributesTemp : list2) {
+//			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length+","+reIdAttributesTemp.getFeatureVector()[0]);
+//		}
+//		System.out.println("-----------------------------");
 		int len=list2.size();
-		log.info("len:"+len);
-		int k=1000;
+		System.out.println("list2:"+len);
+		int k=100;
 		for (int i = 0; i < len; i++) {
+			ReIdAttributesTemp reIdAttributesTempOut=new ReIdAttributesTemp();
 			ReIdAttributesTemp reIdAttributesTemp =list2.get(i);
 			String idTemp=reIdAttributesTemp.getTrackletID()+i;
-			reIdAttributesTemp.setTrackletID(idTemp);;
+			reIdAttributesTempOut.setTrackletID(idTemp);;
 			float[] vector=reIdAttributesTemp.getFeatureVector();
 			float[] outvector=new float[vector.length];
 			for (int j = 0; j < vector.length; j++) {
 				outvector[j]=vector[j]+1;
 			}
-			reIdAttributesTemp.setFeatureVector(outvector);
+			reIdAttributesTempOut.setFeatureVector(outvector);
+			reIdAttributesTempOut.setDataType(reIdAttributesTemp.getDataType());
+			list3.add(reIdAttributesTempOut);
 		}
+//		System.out.println("-------------------------");
+//		for (ReIdAttributesTemp reIdAttributesTemp : list3) {
+//			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length+","+reIdAttributesTemp.getFeatureVector()[0]);
+//		}
+		int length=list3.size();
+		System.out.println("list3:"+length);
 		System.out.println("-------------------------");
-		/*for (ReIdAttributesTemp reIdAttributesTemp : list2) {
-			System.out.println(reIdAttributesTemp.getTrackletID()+","+reIdAttributesTemp.getFeatureVector().length);
-		}*/
-		System.out.println("-------------------------");
+		
+		list2.clear();
+		
 		String outSql="CREATE (c:Person) set c.trackletID={1},c.reidFeature={2},c.dataType={3} ;";
 //				tx.run("MATCH (a:Minute {start: {start}}), (b:Person {trackletID: {trackletID}}) MERGE (a)-[:INCLUDES_PERSON]-(b);"
 //		                ,Values.parameters("start", start, "trackletID", trackletID));
@@ -311,10 +322,9 @@ public class Neo4jDaoJdbc implements Serializable{
 			psOut = conn.prepareStatement(outSql);
 			
 			for (int j = 0; j < k; j++) {
-				for (int i = j*(len/k); i < (j+1)*(len/k); i++) {
-					ReIdAttributesTemp reIdAttributesTemp =list2.get(i);
+				for (int i = j*(length/k); i < (j+1)*(length/k); i++) {
+					ReIdAttributesTemp reIdAttributesTemp =list3.get(i);
 					String trackletID = reIdAttributesTemp.getTrackletID();
-	//				Long start=reIdAttributesTemp.getStart();
 					String dataType=reIdAttributesTemp.getDataType();
 					float[] featureVector=reIdAttributesTemp.getFeatureVector();
 					Feature feature = new FeatureMSCAN(featureVector);
@@ -334,8 +344,7 @@ public class Neo4jDaoJdbc implements Serializable{
 			log.info(e);
 		}finally {
 		try {
-					rs.close();
-					ps.close();
+					psOut.close();
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
