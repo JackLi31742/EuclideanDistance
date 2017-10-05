@@ -1486,8 +1486,8 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	}
 	@Override
 	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(){
-		String sql="MATCH (c:Person{dataType:'20170930'})  "
-							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature limit 200;";
+		String sql="MATCH (c:Person{dataType:'lijun20170927'})  "
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature;";
 			Session session = driver.session();
 			List<ReIdAttributesTemp> list=new ArrayList<>();
 			StatementResult result = session.run(sql);

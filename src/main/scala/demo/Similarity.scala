@@ -37,7 +37,7 @@ class Similarity extends Serializable{
 		val sc=new SparkContext(conf)
   @transient
   val logger:Logger=new ConsoleLogger()
-  val partition=48
+  val partition=500
   val col=128
   val minK=3
   val hourK=10
@@ -144,7 +144,7 @@ class Similarity extends Serializable{
 //      var rdd=rdd.repartition(partition)
     var rddGlom=rdd.glom()
     rdd.persist(StorageLevel.MEMORY_AND_DISK)
-//    println("rddGlom的partitions的大小是:"+rddGlom.partitions.size)
+    println("rddGlom的partitions的大小是:"+rddGlom.partitions.size)
 //    		var rddGlom=rdd.glom()
     
 //    println("checkpoint路径是:"+sc.getCheckpointDir)
@@ -290,7 +290,7 @@ if(args(0).equals("minute")){
       //.repartition(partition)    
 //    val broadRdd=sc.parallelize(broad.value).map(r ⇒ (r.getTrackletID,r.getFeatureVector))
     val broadRdd=sc.parallelize(broad.value,partition)
-//    println("broadRdd的partitions的大小是:"+broadRdd.partitions.size)
+    println("broadRdd的partitions的大小是:"+broadRdd.partitions.size)
 //    println("broadRdd的大小是：" + broadRdd.count())
 //    broadRdd.collect().foreach(f⇒{
 //    	println("broadRdd:-------------------------------")
