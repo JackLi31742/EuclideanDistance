@@ -402,7 +402,8 @@ public class Neo4jDaoJdbc implements Serializable{
 		
 	}
 	
-	public List<ReIdAttributesTemp> addSimRel(scala.collection.immutable.List<Tuple3<String, scala.Double, String>> list) {
+	public List<ReIdAttributesTemp> addSimRel(List<Tuple3<String, scala.Double, String>> list) {
+		System.out.println("jdbc addSimrel");
 		log.info("该次保存的list大小是：" + list.size());
 		long dbstartTime = System.currentTimeMillis();
 		String sql = "MATCH (a:Person {trackletID: {1}}), (b:Person {trackletID: {2}}) "
@@ -411,10 +412,11 @@ public class Neo4jDaoJdbc implements Serializable{
 		try {
 			ps = conn.prepareStatement(sql);
 			for (int i = 0; i < list.size(); i++) {
-				Tuple3<String, scala.Double, String> tuple = list.apply(i);
+				Tuple3<String, scala.Double, String> tuple = list.get(i);
 				String nodeID1 = tuple._1();
 				String nodeID2 = tuple._3();
 				double SimRel = tuple._2().toDouble();
+				log.info("min需要保存的结果是：[{'sim':" + SimRel + ",'trackletID1':'" + nodeID1 + "','trackletID2':'" + nodeID2 + "'}]");
 				ps.setString(1, nodeID1);
 				ps.setString(2, nodeID2);
 				ps.setDouble(3, SimRel);
@@ -437,8 +439,8 @@ public class Neo4jDaoJdbc implements Serializable{
 		long dbendTime = System.currentTimeMillis();
 		System.out.println("Cost batch everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
 		
-		String Outsql = "MATCH (a:Person)-[r:Similarity]-(b:Person) return a.trackletID,b.trackletID,r.Minute";
 		List<ReIdAttributesTemp> outlist = new ArrayList<>();
+		/*String Outsql = "MATCH (a:Person)-[r:Similarity]-(b:Person) return a.trackletID,b.trackletID,r.Minute";
 		PreparedStatement psOut = null;
 		ResultSet rs = null;
 		try {
@@ -479,7 +481,7 @@ public class Neo4jDaoJdbc implements Serializable{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
+		}*/
 		return outlist;
 
 	}

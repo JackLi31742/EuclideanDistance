@@ -206,9 +206,7 @@ public class JavaKnn
 //		for (int i = 0; i < list.size(); i++) {
 //			System.out.println("list:"+list.get(i).toString(1));
 //		}
-		
-        
-        
+		System.out.println("java knn list的大小是："+list.size());
 //        System.out.println("every knn 结束------------------------");
         return list;
 	}
