@@ -706,7 +706,7 @@ if(args(0).equals("minute")){
     
 //    val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
-//    println("result的个数是："+result.count())
+    println("result的个数是："+result.count())
 //    result.collect().foreach(f⇒{
 //    	println("result:-------------------------------")
 //      println(f)
