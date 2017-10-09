@@ -1084,12 +1084,12 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	@Override
 	public List<ReIdAttributesTemp> addSimRel( String nodeID1, String nodeID2, double SimRel) {
 		Session session = driver.session();
-		Transaction tx=session.beginTransaction();
+//		Transaction tx=session.beginTransaction();
 		long dbstartTime = System.currentTimeMillis();
 		List<ReIdAttributesTemp> list=new ArrayList<>();
 //		RagManager rm=new RagManager();
 		try {
-		StatementResult result = tx.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
+		StatementResult result = session.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
         		+ "return a.trackletID,b.trackletID,r.Minute;"
                 ,Values.parameters("id1", nodeID1, "id2", nodeID2,"Minute", SimRel));
 		while (result.hasNext()) {
@@ -1109,13 +1109,13 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				list.add(reIdAttributesTemp);
             
         }
-		tx.success();
+//		tx.success();
         long dbendTime = System.currentTimeMillis();
         System.out.println("Cost everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
 		} catch (Exception e) {
 			// TODO: handle exception
 		}finally {
-			tx.close();
+//			tx.close();
 			session.close();
 		}
         return list;

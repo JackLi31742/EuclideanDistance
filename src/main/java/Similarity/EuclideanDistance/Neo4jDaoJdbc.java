@@ -279,7 +279,7 @@ public class Neo4jDaoJdbc implements Serializable{
 //    		}
 //            System.out.println("-----------------------------");
 		//copy
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 10; i++) {
 			list2.addAll(list);
 		}
 		list.clear();
@@ -289,7 +289,7 @@ public class Neo4jDaoJdbc implements Serializable{
 //		System.out.println("-----------------------------");
 		int len=list2.size();
 		System.out.println("list2:"+len);
-		int k=100;
+		int k=1;
 		for (int i = 0; i < len; i++) {
 			ReIdAttributesTemp reIdAttributesTempOut=new ReIdAttributesTemp();
 			ReIdAttributesTemp reIdAttributesTemp =list2.get(i);
