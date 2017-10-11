@@ -1089,7 +1089,8 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 		List<ReIdAttributesTemp> list=new ArrayList<>();
 //		RagManager rm=new RagManager();
 		try {
-		StatementResult result = session.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
+		StatementResult result = session.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) "
+				+ "MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
         		+ "return a.trackletID,b.trackletID,r.Minute;"
                 ,Values.parameters("id1", nodeID1, "id2", nodeID2,"Minute", SimRel));
 		while (result.hasNext()) {
@@ -1487,7 +1488,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	@Override
 	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(){
 		String sql="MATCH (c:Person{dataType:'lijun20170927'})  "
-							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature limit 500;";
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature limit 10000;";
 			Session session = driver.session();
 			List<ReIdAttributesTemp> list=new ArrayList<>();
 			StatementResult result = session.run(sql);

@@ -1,7 +1,14 @@
 package Similarity.EuclideanDistance;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map.Entry;
+
+import org.apache.commons.collections4.keyvalue.MultiKey;
+import org.apache.commons.collections4.map.MultiKeyMap;
 
 import Similarity.EuclideanDistance.util.ConsoleLogger;
 import Similarity.EuclideanDistance.util.Logger;
@@ -10,9 +17,8 @@ import Similarity.EuclideanDistance.util.SingletonUtil;
 import demo.Similarity;
 import demo.Similarity2;
 import entities.Hour;
-import entities.Minute;
 import entities.ReIdAttributesTemp;
-import test.MapTest;
+import entities.ReIdAttributesTempRDD;
 	/**
 	 * 计算相似度
 	 */
@@ -64,9 +70,6 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //			,JavaSparkContext sc
 			,String[] args
 			) throws Exception {
-		// 前k个
-//		int k = 50;
-		;
 		//spark		
 		long SparkstartTime = System.currentTimeMillis();
 //		similarity2.glom(similarity2.listToRdd(list),args);
@@ -78,32 +81,34 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //		EuDis(rdd);
 		
 		//单机版java实现
-		/*
+		
+		// 前k个
+		/*int k = 3;
 		long startTime = System.currentTimeMillis();
 		MultiKeyMap<String, Double> multiKeyMap=new MultiKeyMap<>();
 //		ReIdAttributesTemp reIdAttributesTemp[][]=new ReIdAttributesTemp[list.size()][list.size()];
-		List<ReIdAttributesTempRDD> reIdAttributesTempRDDList=new ArrayList<>();
+//		List<ReIdAttributesTempRDD> reIdAttributesTempRDDList=new ArrayList<>();
 		for (int i = 0; i < list.size(); i++) {
 			for (int j = i + 1; j < list.size(); j++) {
 //				 System.out.println(String.valueOf(list.get(i)[0])+":"+String.valueOf(list.get(i)[1]));
 //				 System.out.println(String.valueOf(list.get(j)[0])+":"+String.valueOf(list.get(j)[1]));
 				//目前getCamID是相同的，所以测试时为equals
-				if ((list.get(i).getCamID().equals(list.get(j).getCamID()))) {
+//				if ((list.get(i).getCamID().equals(list.get(j).getCamID()))) {
 					if (list.get(i).getFeatureVector()!=null&&list.get(j).getFeatureVector()!=null) {
 //						javaRDD.map(new Function2<T1, T2, R>(){
 //							
 //						});
 //						reIdAttributesTemp[i][j]=
-						ReIdAttributesTempRDD reIdAttributesTempRDD=
-								new ReIdAttributesTempRDD(i,j,list.get(i).getTrackletID(), list.get(j).getTrackletID(),list.get(i),list.get(j));
-						reIdAttributesTempRDDList.add(reIdAttributesTempRDD);
+//						ReIdAttributesTempRDD reIdAttributesTempRDD=
+//								new ReIdAttributesTempRDD(i,j,list.get(i).getTrackletID(), list.get(j).getTrackletID(),list.get(i),list.get(j));
+//						reIdAttributesTempRDDList.add(reIdAttributesTempRDD);
 						double sim=getSim(list.get(i).getFeatureVector(), list.get(j).getFeatureVector());
 						multiKeyMap.put(list.get(i).getTrackletID(), list.get(j).getTrackletID(),sim);
 						
 					}
 				}
 			}
-		}
+//		}
 		
 		
 		List<Entry<MultiKey<? extends String>, Double>> multiKeyMapList=
@@ -148,8 +153,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		}
 		long endTime = System.currentTimeMillis();
 
-		logger.info("Cost time of nomal java: " + (endTime - startTime) + "ms");
-		*/
+		logger.info("Cost time of nomal java: " + (endTime - startTime) + "ms");*/
+		
 	}
 	
 	public static void main(String[] args) throws Exception  {

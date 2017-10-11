@@ -102,7 +102,7 @@ public class JavaKnn
     public FeatureData getMats(float[] arr1,float[] arr2,int col) {
     	int arr1len=arr1.length;
     	int arr2len=arr2.length;
-//    	System.out.println("arr1len:"+arr1len+",arr2len:"+arr2len);
+    	System.out.println("arr1len:"+arr1len+",arr2len:"+arr2len);
     	int arr1Row=arr1len/col;
     	int arr2Row=arr2len/col;
     	

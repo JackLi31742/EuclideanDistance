@@ -225,7 +225,7 @@ if(args(0).equals("minute")){
 //    })
     val rdd1 = rdd.map(r ⇒(r.getTrackletID,r.getFeatureVector))
     
-    println("rdd1的partitions的大小是:"+rdd1.partitions.size)
+//    println("rdd1的partitions的大小是:"+rdd1.partitions.size)
 //    println("rdd1的大小是：" + rdd1.count())
 //    rdd1.collect().foreach(f⇒{
 //    	println("rdd1:-------------------------------")
@@ -292,7 +292,7 @@ if(args(0).equals("minute")){
       //.repartition(partition)    
 //    val broadRdd=sc.parallelize(broad.value).map(r ⇒ (r.getTrackletID,r.getFeatureVector))
     val broadRdd=sc.parallelize(broad.value)
-    println("broadRdd的partitions的大小是:"+broadRdd.partitions.size)
+//    println("broadRdd的partitions的大小是:"+broadRdd.partitions.size)
 //    println("broadRdd的大小是：" + broadRdd.count())
 //    broadRdd.collect().foreach(f⇒{
 //    	println("broadRdd:-------------------------------")
@@ -325,8 +325,8 @@ if(args(0).equals("minute")){
         result2.+=(Tuple2(arr1,arr2)).iterator
         //        arr.toIterator
       })
-      println("rdd1MapParRDD的partitions的大小是:"+rdd1MapParRDD.partitions.size)
-      //大小是Partitions的数量
+//      println("rdd1MapParRDD的partitions的大小是:"+rdd1MapParRDD.partitions.size)
+//      //大小是Partitions的数量
 //      println("rdd1MapParRDD的大小是：" + rdd1MapParRDD.count())
 //      rdd1MapParRDD.collect.foreach(f ⇒ {
 //        println("rdd1MapParRDD---------------------")
@@ -364,7 +364,9 @@ if(args(0).equals("minute")){
 
       //.map(f⇒(f._1,f._2._2))
       val caRDD = rdd1MapParRDD.cartesian(broadRdd)
-      println("caRDD的partitions的大小是:"+caRDD.partitions.size)
+      //zip 的partition数量必须一致
+//      val caRDD = rdd1MapParRDD.zip(broadRdd)
+//      println("caRDD的partitions的大小是:"+caRDD.partitions.size)
 //      println("caRDD的大小是：" + caRDD.count())
 //       caRDD.collect.foreach(f ⇒ {
 //        println("caRDD---------------------")
@@ -430,7 +432,7 @@ if(args(0).equals("minute")){
 //        lock.unlock()
 //            }
       })
-      println("resultRdd的partitions的大小是:"+resultRdd.partitions.size)
+//      println("resultRdd的partitions的大小是:"+resultRdd.partitions.size)
 //      println("resultRdd的大小是：" + resultRdd.count())
 //      resultRdd.collect.foreach(f ⇒ {
 //        println("list的大小是：" + f.size())
@@ -442,7 +444,7 @@ if(args(0).equals("minute")){
 //        println("list 的for循环结束")
 //      })
       val resultFilterRdd = resultRdd.filter(f ⇒ f.size() != 0).flatMap(f ⇒ f.asScala).filter(f ⇒ f != null)
-      println("resultFilterRdd的partitions的大小是:"+resultFilterRdd.partitions.size)
+//      println("resultFilterRdd的partitions的大小是:"+resultFilterRdd.partitions.size)
 //      println("resultFilterRdd的大小是：" + resultFilterRdd.count())
 //      resultFilterRdd.collect.foreach(f ⇒ {
 //        if (f != null) {
@@ -706,7 +708,7 @@ if(args(0).equals("minute")){
     
 //    val dbstartTime = System.currentTimeMillis();
 //    val resultArr= result.collect()
-    println("result的个数是："+result.count())
+//    println("result的个数是："+result.count())
 //    result.collect().foreach(f⇒{
 //    	println("result:-------------------------------")
 //      println(f)
@@ -760,100 +762,97 @@ if(args(0).equals("minute")){
       
     })*/
       //foreach好像不再是spark任务
-       result.foreachPartition(f ⇒ {
-      
-              var dbConnector: GraphDatabaseConnector = new Neo4jConnector();
-              val logger: Logger = new ConsoleLogger()
-              var errorlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
-      //        if (!(dbConnector.isOpen())) {
-      //          logger.info("session 关闭了")
-      //        }
-              var flag = true
-              
-      //        if (flag) {
-                try {
-                  f.foreach(f ⇒ {
-                  if (dbConnector == null) {
-                     flag = false
-                    }
-                  if (flag) {
-                    for (i <- 0 until f._2.length) {
-                      //            println("dbConnector的开启状态："+dbConnector.isOpen)
-                      if (!(f._2(i)._2.toString().equals("null"))) {
-                        logger.info("min需要保存的结果是：[{'sim':" + f._2(i)._2 + ",'trackletID1':'" + f._1 + "','trackletID2':'" + f._2(i)._1 + "'}]")
-                        var outlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
-                        try {
-                          outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList
-                          logger.info("min保存完成的结果是：" + outlist.toString())
-                        } catch {
-                          case e: Exception =>
-                            println("失败了一次，exception caught: " + e);
-      //                      if (!(dbConnector.isOpen())) {
-      //                        logger.info("session 关闭了,在第一次catch中")
-      //                      }
-                            try {
-                              outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
-                              logger.info("min再次保存完成的结果是：" + outlist.toString())
-                            } catch {
-                              case e: Exception =>
-                                println("失败了两次，exception caught: " + e);
-      //                          if (!(dbConnector.isOpen())) {
-      //                            logger.info("session 关闭了,在第二次catch中")
-      //                          }
-                                outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
-                                logger.info("min第三次保存完成的结果是：" + outlist.toString())
-                            }
-                        }
-                        if (outlist == null) {
-                          var reIdAttributesTemp: ReIdAttributesTemp = new ReIdAttributesTemp
-                          reIdAttributesTemp.setTrackletID1(f._1)
-                          reIdAttributesTemp.setTrackletID2(f._2(i)._1)
-                          reIdAttributesTemp.setSim(f._2(i)._2)
-                          errorlist.::(reIdAttributesTemp)
-                        }
-                      }
-                    }
-                  }
-                  })
-                } catch {
-                  case e: Exception =>logger.info("彻底失败了，exception caught: " + e);
-      //              if (!(dbConnector.isOpen())) {
-      //                logger.info("session 关闭了,在第三次catch中")
-      //              }
-      //            if (flag) {
-                    if (errorlist != null) {
-                      logger.info("min未保存成功的结果是：" + errorlist.toString())
-                    }
-      //              }
-                } finally {
-      
-                  dbConnector.release()
-      
-                  dbConnector = null
-                }
-      //        }
-            })
+//       result.foreachPartition(f ⇒ {
+//      
+//              var dbConnector: GraphDatabaseConnector = new Neo4jConnector();
+//              val logger: Logger = new ConsoleLogger()
+//              var errorlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
+//      //        if (!(dbConnector.isOpen())) {
+//      //          logger.info("session 关闭了")
+//      //        }
+//              var flag = true
+//              
+//      //        if (flag) {
+//                try {
+//                  f.foreach(f ⇒ {
+//                  if (dbConnector == null) {
+//                     flag = false
+//                    }
+//                  if (flag) {
+//                    for (i <- 0 until f._2.length) {
+//                      //            println("dbConnector的开启状态："+dbConnector.isOpen)
+//                      if (!(f._2(i)._2.toString().equals("null"))) {
+//                        logger.info("min需要保存的结果是：[{'sim':" + f._2(i)._2 + ",'trackletID1':'" + f._1 + "','trackletID2':'" + f._2(i)._1 + "'}]")
+//                        var outlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
+//                        try {
+//                          outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList
+//                          logger.info("min保存完成的结果是：" + outlist.toString())
+//                        } catch {
+//                          case e: Exception =>
+//                            println("失败了一次，exception caught: " + e);
+//      //                      if (!(dbConnector.isOpen())) {
+//      //                        logger.info("session 关闭了,在第一次catch中")
+//      //                      }
+//                            try {
+//                              outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
+//                              logger.info("min再次保存完成的结果是：" + outlist.toString())
+//                            } catch {
+//                              case e: Exception =>
+//                                println("失败了两次，exception caught: " + e);
+//      //                          if (!(dbConnector.isOpen())) {
+//      //                            logger.info("session 关闭了,在第二次catch中")
+//      //                          }
+//                                outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
+//                                logger.info("min第三次保存完成的结果是：" + outlist.toString())
+//                            }
+//                        }
+//                        if (outlist == null) {
+//                          var reIdAttributesTemp: ReIdAttributesTemp = new ReIdAttributesTemp
+//                          reIdAttributesTemp.setTrackletID1(f._1)
+//                          reIdAttributesTemp.setTrackletID2(f._2(i)._1)
+//                          reIdAttributesTemp.setSim(f._2(i)._2)
+//                          errorlist.::(reIdAttributesTemp)
+//                        }
+//                      }
+//                    }
+//                  }
+//                  })
+//                } catch {
+//                  case e: Exception =>logger.info("彻底失败了，exception caught: " + e);
+//      //              if (!(dbConnector.isOpen())) {
+//      //                logger.info("session 关闭了,在第三次catch中")
+//      //              }
+//      //            if (flag) {
+//                    if (errorlist != null) {
+//                      logger.info("min未保存成功的结果是：" + errorlist.toString())
+//                    }
+//      //              }
+//                } finally {
+//      
+//                  dbConnector.release()
+//      
+//                  dbConnector = null
+//                }
+//      //        }
+//            })
 
-      //测试没成功Iterator 的大小是0
-//      result.foreachPartition(f ⇒ {
-//
-//        //        var dbConnector: GraphDatabaseConnector = new Neo4jConnector();
-//        var neo4jDaoJdbc: Neo4jDaoJdbc = new Neo4jDaoJdbc(); ;
-//        val logger: Logger = new ConsoleLogger()
-//        var errorlist = new scala.collection.mutable.ListBuffer[List[ReIdAttributesTemp]]
-//        //        if (!(dbConnector.isOpen())) {
-//        //          logger.info("session 关闭了")
-//        //        }
-//        var flag = true
-//
-//        //        if (flag) {
-//        try {
+    //list级别保存
+      result.foreachPartition(f ⇒ {
+
+        var neo4jDaoJdbc: Neo4jDaoJdbc = new Neo4jDaoJdbc();
+//        neo4jDaoJdbc.loadConfig();
+//		    neo4jDaoJdbc.getConnection();
+        val logger: Logger = new ConsoleLogger()
+        var errorlist = new scala.collection.mutable.ListBuffer[ Iterator[(String, List[(String, Double, String)])]]
+        var flag = true
+
+        //        if (flag) {
+        try {
 //          if (f != null) {
-//            //size永远都是0
-//            //        	  println("f size:"+f.size)
+//            println("f size:"+f.size)
 //            var Iteratorlen = f.length
-//            if (Iteratorlen > 0) {
-//              println("f  Iterator length:" + Iteratorlen)
+//            println("f  Iterator length:" + Iteratorlen)
+////            if (f.size>0) {
 //              while (f.hasNext) {
 //                //              for (i <- 0 until f.length) {
 //                //              f.foreach(f ⇒ {
@@ -862,53 +861,55 @@ if(args(0).equals("minute")){
 //                if (neo4jDaoJdbc == null) {
 //                  flag = false
 //                }
-//                println("foreach start")
+////                println("foreach start")
 //                var resultlist = f.next()
 //                if (resultlist != null) {
 //                  println("f 是否为null的判断")
 //                  if (resultlist._2 != null) {
 //                    var listlen = resultlist._2.length
 //                    println("f  listlen:" + listlen)
-//                    if (listlen > 0) {
-//                      //                if (flag) {
-//                      //              var resultlist=f.next()
-//                      //              for (i <- 0 until resultlist._2.length) {
-//                      //            println("dbConnector的开启状态："+dbConnector.isOpen)
-//                      //                if (!(resultlist._2(i)._2.toString().equals("null"))) {
-//                      logger.info("min需要保存的结果是：" + resultlist._2.toString())
-//                      var outlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
-//                      try {
-//                        //                    outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList
-//                        outlist = neo4jDaoJdbc.addSimRel(resultlist._2.asJava).asScala.toList
-//                        //                    logger.info("min保存完成的结果是：" + outlist.toString())
-//                      } catch {
-//                        case e: Exception =>
-//                          println("失败了一次，exception caught: " + e.getMessage + "\\n" + e.printStackTrace());
-//                          //                      if (!(dbConnector.isOpen())) {
-//                          //                        logger.info("session 关闭了,在第一次catch中")
-//                          //                      }
-//                          try {
-//                            //                        outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
-//                            outlist = neo4jDaoJdbc.addSimRel(resultlist._2.asJava).asScala.toList
-//                            //                        logger.info("min再次保存完成的结果是：" + outlist.toString())
-//                          } catch {
-//                            case e: Exception =>
-//                              println("失败了两次，exception caught: " + e.getMessage + "\\n" + e.printStackTrace());
-//                              //                          if (!(dbConnector.isOpen())) {
-//                              //                            logger.info("session 关闭了,在第二次catch中")
-//                              //                          }
-//                              //                          outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
-//                              outlist = neo4jDaoJdbc.addSimRel(resultlist._2.asJava).asScala.toList
-//                            //                          logger.info("min第三次保存完成的结果是：" + outlist.toString())
-//                          }
-//                      }
-//                      if (outlist == null) {
-//                        //                    var reIdAttributesTemp: ReIdAttributesTemp = new ReIdAttributesTemp
-//                        //                    reIdAttributesTemp.setTrackletID1(f.next()._1)
-//                        //                    reIdAttributesTemp.setTrackletID2(f.next()._2(i)._1)
-//                        //                    reIdAttributesTemp.setSim(f.next()._2(i)._2)
-//                        errorlist.+=(outlist)
-//                      }
+//                    if (resultlist._2.size > 0||resultlist._2.length>0) {
+                      //                if (flag) {
+                      //              var resultlist=f.next()
+                      //              for (i <- 0 until resultlist._2.length) {
+                      //            println("dbConnector的开启状态："+dbConnector.isOpen)
+                      //                if (!(resultlist._2(i)._2.toString().equals("null"))) {
+//                      logger.info("min需要保存的结果大小是：" + resultlist._2.size)
+                      var outlist: scala.collection.immutable.List[ReIdAttributesTemp] = null
+                      var count:Array[Int]=null
+                      var countAll:Int=0
+                      try {
+                        //                    outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList
+                        countAll=neo4jDaoJdbc.addSimRel(f.asJava)
+                         logger.info("min保存完成的结果大小是：" + countAll)
+                      } catch {
+                        case e: Exception =>
+                          println("失败了一次，exception caught: " + e.getStackTraceString);
+                          //                      if (!(dbConnector.isOpen())) {
+                          //                        logger.info("session 关闭了,在第一次catch中")
+                          //                      }
+                          try {
+                            //                        outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
+                           countAll= neo4jDaoJdbc.addSimRel(f.asJava)
+                            logger.info("min再次保存完成的结果大小是：" + countAll)
+                          } catch {
+                            case e: Exception =>
+                              println("失败了两次，exception caught: " + e.getMessage + "\\n" + e.getStackTrace);
+                              //                          if (!(dbConnector.isOpen())) {
+                              //                            logger.info("session 关闭了,在第二次catch中")
+                              //                          }
+                              //                          outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2).asScala.toList;
+                              countAll=neo4jDaoJdbc.addSimRel(f.asJava)
+                              logger.info("min第三次保存完成的结果大小是：" + countAll)
+                          }
+                      }
+                      if (countAll == 0) {
+//                                            var reIdAttributesTemp: ReIdAttributesTemp = new ReIdAttributesTemp
+//                                            reIdAttributesTemp.setTrackletID1(resultlist._2._1)
+//                                            reIdAttributesTemp.setTrackletID2(f.next()._2(i)._1)
+//                                            reIdAttributesTemp.setSim(f.next()._2(i)._2)
+                        errorlist.+=(f)
+                      }
 //                    } else {
 //                      println("Iterator foreach list 的大小是0")
 //                    }
@@ -920,37 +921,37 @@ if(args(0).equals("minute")){
 //                }
 //              }
 //              //              })
-//            } else {
-//              println("Iterator 的大小是0")
-//            }
+////            } else {
+////              println("Iterator 的大小是0")
+////            }
 //          } else {
 //            println("Iterator is null")
 //          }
-//          //            }
-//
-//          flag = false
-//        } catch {
-//          case e: Exception =>
-//            logger.info("彻底失败了，exception caught: " + e.getMessage + "\\n" + e.printStackTrace());
-//            //              if (!(dbConnector.isOpen())) {
-//            //                logger.info("session 关闭了,在第三次catch中")
-//            //              }
-//            //            if (flag) {
-//            if (errorlist != null) {
-//              logger.info("min未保存成功的结果是：" + errorlist.foreach(println))
-//            }
-//          //              }
-//        } finally {
-//
-//          //            dbConnector.release()
-//          //        	  dbConnector = null
-//          //            if(flag==false){
+          //            }
+
+          flag = false
+        } catch {
+          case e: Exception =>
+            logger.info("彻底失败了，exception caught: " + e.getMessage + "\\n" + e.getStackTrace);
+            //              if (!(dbConnector.isOpen())) {
+            //                logger.info("session 关闭了,在第三次catch中")
+            //              }
+            //            if (flag) {
+            if (errorlist != null) {
+              logger.info("min未保存成功的结果是：" + errorlist.foreach(println))
+            }
+          //              }
+        } finally {
+
+          //            dbConnector.release()
+          //        	  dbConnector = null
+          //            if(flag==false){
 //          neo4jDaoJdbc.close();
-//          neo4jDaoJdbc = null
-//          //          }
-//        }
-//        //        }
-//      })
+          neo4jDaoJdbc = null
+          //          }
+        }
+        //        }
+      })
       result.unpersist()
     
 //        		println("i:"+i)
