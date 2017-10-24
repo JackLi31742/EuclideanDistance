@@ -53,7 +53,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	private static final long serialVersionUID = -1741972648494898750L;
 	Driver driver = GraphDatabase.driver(
 			"bolt://172.18.33.37:7687",
-//			"bolt://172.18.33.39:7687",
+//			"bolt://172.18.33.84:7687",
             AuthTokens.basic("neo4j", "casia@1234"));
 //	Session session = driver.session();
 	/*private  Driver driver ;
@@ -1488,7 +1488,7 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	@Override
 	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(){
 		String sql="MATCH (c:Person{dataType:'lijun20170927'})  "
-							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature limit 10000;";
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature;";
 			Session session = driver.session();
 			List<ReIdAttributesTemp> list=new ArrayList<>();
 			StatementResult result = session.run(sql);

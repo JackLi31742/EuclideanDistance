@@ -1,30 +1,14 @@
 package Similarity.EuclideanDistance;
 
-import java.io.InputStream;
 import java.io.Serializable;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Values;
 
-import entities.Feature;
-import entities.FeatureMSCAN;
-import entities.ReIdAttributesTemp;
-import scala.Double;
-import scala.Tuple2;
+import db.JdbcUtils;
 import scala.Tuple3;
-import scala.collection.JavaConverters.*;
 /* 环境
  * 1.JDK7
  * 2.Neo4j3.x
@@ -49,14 +33,14 @@ public class Neo4jDaoJdbc implements Serializable{
 	private static final long serialVersionUID = -5157847407490829460L;
 	private static final Logger log = Logger.getLogger(Neo4jDaoJdbc.class);// 日志文件
 	// 表示定义数据库的用户名
-	private static String USERNAME;
-	// 定义数据库的密码
-	private static String PASSWORD;
-	// 定义数据库的驱动信息
-	private static String DRIVER;
-	// 定义访问数据库的地址
-	private static String URL;
-	// 定义数据库的链接
+//	private static String USERNAME;
+//	// 定义数据库的密码
+//	private static String PASSWORD;
+//	// 定义数据库的驱动信息
+//	private static String DRIVER;
+//	// 定义访问数据库的地址
+//	private static String URL;
+//	// 定义数据库的链接
 //	private Connection conn;
 	// 定义sql语句的执行对象
 //	private PreparedStatement ps;
@@ -69,46 +53,49 @@ public class Neo4jDaoJdbc implements Serializable{
 //		// 加载数据库配置信息，并给相关的属性赋值
 //		loadConfig();
 //	}
+    
+    private static final String sql = "MATCH (a:Person {trackletID: {1}}), (b:Person {trackletID: {2}}) "
+			+ "MERGE (a)-[r:Similarity]-(b) set r.Minute={3}";
 
 	/**
 	 * 加载数据库配置信息，并给相关的属性赋值
 	 */
-	public static void loadConfig() {
-		try {
-			InputStream inStream = Neo4jDaoJdbc.class.getResourceAsStream("/jdbc.properties");
-			Properties prop = new Properties();
-			prop.load(inStream);
-			USERNAME = prop.getProperty("jdbc.username");
-			PASSWORD = prop.getProperty("jdbc.password");
-			DRIVER = prop.getProperty("jdbc.driver");
-			URL = prop.getProperty("jdbc.url");
-//			System.out.println(USERNAME+","+PASSWORD+","+DRIVER+","+URL);
-		} catch (Exception e) {
-			throw new RuntimeException("读取数据库配置文件异常！", e);
-		}
-	}
+//	public void loadConfig() {
+//		try {
+//			InputStream inStream = Neo4jDaoJdbc.class.getResourceAsStream("/jdbc.properties");
+//			Properties prop = new Properties();
+//			prop.load(inStream);
+//			USERNAME = prop.getProperty("jdbc.username");
+//			PASSWORD = prop.getProperty("jdbc.password");
+//			DRIVER = prop.getProperty("jdbc.driver");
+//			URL = prop.getProperty("jdbc.url");
+////			System.out.println(USERNAME+","+PASSWORD+","+DRIVER+","+URL);
+//		} catch (Exception e) {
+//			throw new RuntimeException("读取数据库配置文件异常！", e);
+//		}
+//	}
 
 	public Neo4jDaoJdbc() {
-		Neo4jDaoJdbc.loadConfig();
+//		Neo4jDaoJdbc.loadConfig();
 	}
 
 	/**
 	 * 获取数据库连接
 	 */
-	public Connection getConnection() {
-		Connection conn = null;
-		try {
-			// 加载驱动特殊处理，否则找不到驱动包
-			//.newInstance()
-			Class.forName(DRIVER);
-			// 注册驱动
-			conn = DriverManager.getConnection(URL, USERNAME, PASSWORD); // 获取连接
-		} catch (Exception e) {
-			e.printStackTrace();
-		} 
-		log.info("获取连接成功！");
-		return conn;
-	}
+//	public Connection getConnection() {
+////		Connection conn = null;
+//		try {
+//			// 加载驱动特殊处理，否则找不到驱动包
+//			//.newInstance()
+//			Class.forName(DRIVER);
+//			// 注册驱动
+//			conn = DriverManager.getConnection(URL, USERNAME, PASSWORD); // 获取连接
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		} 
+//		log.info("获取连接成功！");
+//		return conn;
+//	}
 
 	/**
 	 * 执行更新操作
@@ -190,17 +177,17 @@ public class Neo4jDaoJdbc implements Serializable{
 	}
 
 	public static void main(String[] args)  {
-		Neo4jDaoJdbc neo4jDaoJdbc = new Neo4jDaoJdbc();
-		neo4jDaoJdbc.loadConfig();
-		neo4jDaoJdbc.getConnection();
-		try {
-//			neo4jDaoJdbc.copyNodes();
-		} catch (Exception e) {
-			// TODO: handle exception
-		}finally {
-			neo4jDaoJdbc.close();
-			
-		}
+//		Neo4jDaoJdbc neo4jDaoJdbc = new Neo4jDaoJdbc();
+//		neo4jDaoJdbc.loadConfig();
+//		neo4jDaoJdbc.getConnection();
+//		try {
+////			neo4jDaoJdbc.copyNodes();
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//		}finally {
+//			neo4jDaoJdbc.close();
+//			
+//		}
 		// 查询点
 //		String sql1 = "MATCH (n) RETURN n LIMIT {1} ";
 //		// 查询线
@@ -412,112 +399,157 @@ public class Neo4jDaoJdbc implements Serializable{
 	*/
 	public int addSimRel(
 //			List<Tuple3<String, scala.Double, String>> list
-			Iterator<Tuple2<String,scala.collection.immutable.List<Tuple3<String, scala.Double, String>>>> iterator
+			Iterator<scala.collection.immutable.List<Tuple3<String, scala.Double, String>>> iterator
+//			,Connection conn
 			) {
 //		loadConfig();
-		Connection conn =getConnection();
-		PreparedStatement ps = null;
-//						ResultSet rs = null;
+//		Connection conn = DBUtil.getConnection();
+//		Connection conn = JdbcUtils.getConnection();  
 		long dbstartTime = System.currentTimeMillis();
-		String sql = "MATCH (a:Person {trackletID: {1}}), (b:Person {trackletID: {2}}) "
-				+ "MERGE (a)-[r:Similarity]-(b) set r.Minute={3}";
+		PreparedStatement ps = null;
+//		ResultSet rs = null;
 //		System.out.println("jdbc addSimrel");
 //		List<ReIdAttributesTemp> outlist = new ArrayList<>();
 //		int[] count =null;
 		int countAll=0;
+		int num=0;
 		try {
-		if (iterator != null) {
-			while (iterator.hasNext()) {
-				scala.collection.immutable.List<Tuple3<String, scala.Double, String>> list = iterator.next()._2();
-				if (list != null) {
-//					System.out.println("该次保存的list的length是：" + list.length());
-					if (list.size() > 0||list.length()>0) {
-						System.out.println("该次保存的list的size是：" + list.size());
-						try {
-							ps = conn.prepareStatement(sql);
-							for (int i = 0; i < list.size(); i++) {
-								Tuple3<String, scala.Double, String> tuple = list.apply(i);
-								String nodeID1 = tuple._1();
-								String nodeID2 = tuple._3();
-								double SimRel = java.lang.Double.valueOf(tuple._2()+"");
-								System.out.println("jdbc min需要保存的结果是：[{'sim':" + SimRel + ",'trackletID1':'" + nodeID1
-										+ "','trackletID2':'" + nodeID2 + "'}]");
-								ps.setString(1, nodeID1);
-								ps.setString(2, nodeID2);
-								ps.setDouble(3, SimRel);
-								ps.addBatch();
-							}
-							int[] count = ps.executeBatch();
-							System.out.println("执行成功的个数是:" + count.length);
-							countAll+=count.length;
-//							rs = ps.executeQuery();
-							ps.clearBatch();
-						} catch (Exception e) {
-							// TODO: handle exception
-							e.printStackTrace();
-						} 
-//						try {
-//							if (rs != null) {
-//								while (rs.next()) {
-//									// 遍历每行元素的内容
-//									ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
-//									String trackletID1 = rs.getString(1);
-//									String trackletID2 = rs.getString(2);
-//									java.lang.Double sim = rs.getDouble(3);
-//									if (!(trackletID1.equals("null"))) {
-//										reIdAttributesTemp.setTrackletID1(trackletID1);
-//									}
-//									if (!(trackletID2.equals("null"))) {
-//										reIdAttributesTemp.setTrackletID2(trackletID2);
-//									}
-//
-//									reIdAttributesTemp.setSim(sim);
-//									outlist.add(reIdAttributesTemp);
-//								}
-//							} else {
-//								System.out.println("结果集不存在！");
-//							}
-//						} catch (SQLException e) {
-//							e.printStackTrace();
-//						}
-						finally {
+			if (iterator != null) {
+				while (iterator.hasNext()) {
+					scala.collection.immutable.List<Tuple3<String, scala.Double, String>> list = iterator.next();
+					if (list != null) {
+						// System.out.println("该次保存的list的length是：" +
+						// list.length());
+						//
+						if (list.size() > 0 || list.length() > 0) {
+							System.out.println("该次需要保存的list的大小是：" + list.size() + "," + list.length());
 							try {
-//								rs.close();
-								ps.close();
-//								conn.close();
-							} catch (SQLException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-						}
+//								JdbcUtils.beginTransaction();
+								Connection conn =null;
+								// conn.setAutoCommit(false); // 关闭自动提交事务（开启事务）
 
+//								if (conn == null) {
+//									conn = DBUtil.getConnection();
+//									ps = conn.prepareStatement(sql);
+//								} else {
+								conn = JdbcUtils.getConnection();
+									ps = conn.prepareStatement(sql);
+//								}
+								for (int i = 0; i < list.size(); i++) {
+									// Tuple3<String, scala.Double, String>
+									// tuple = list.get(i);
+									Tuple3<String, scala.Double, String> tuple = list.apply(i);
+									String nodeID1 = tuple._1();
+									String nodeID2 = tuple._3();
+									double SimRel = java.lang.Double.valueOf(tuple._2() + "");
+									System.out.println("jdbc min需要保存的结果是：[{'sim':" + SimRel + ",'trackletID1':'"
+											+ nodeID1 + "','trackletID2':'" + nodeID2 + "'}]");
+									ps.setString(1, nodeID1);
+									ps.setString(2, nodeID2);
+									ps.setDouble(3, SimRel);
+									ps.addBatch();
+								}
+								int[] count = ps.executeBatch();
+								// conn.commit();
+								System.out.println("执行成功的个数是:" + count.length);
+								countAll += count.length;
+								// rs = ps.executeQuery();
+								ps.clearBatch();
+								if (ps != null) {
+
+									ps.close();
+								} 
+//									else {
+//									System.out.println("ps 是null");
+//								}
+								JdbcUtils.releaseConnection(conn);
+//								JdbcUtils.commitTransaction();
+							} catch (Exception e) {
+								// TODO: handle exception
+//								e.printStackTrace();
+							}
+							// try {
+							// if (rs != null) {
+							// while (rs.next()) {
+							// // 遍历每行元素的内容
+							// ReIdAttributesTemp reIdAttributesTemp = new
+							// ReIdAttributesTemp();
+							// String trackletID1 = rs.getString(1);
+							// String trackletID2 = rs.getString(2);
+							// java.lang.Double sim = rs.getDouble(3);
+							// if (!(trackletID1.equals("null"))) {
+							// reIdAttributesTemp.setTrackletID1(trackletID1);
+							// }
+							// if (!(trackletID2.equals("null"))) {
+							// reIdAttributesTemp.setTrackletID2(trackletID2);
+							// }
+							//
+							// reIdAttributesTemp.setSim(sim);
+							// outlist.add(reIdAttributesTemp);
+							// }
+							// } else {
+							// System.out.println("结果集不存在！");
+							// }
+							// } catch (SQLException e) {
+							// e.printStackTrace();
+							// }
+							finally {
+								try {
+									// rs.close();
+									
+//									JdbcUtils.rollbackTransaction();
+									// if (conn!=null) {
+									// DBUtil.closeConnection();
+									// }else {
+									// System.out.println("conn 是null");
+									// }
+									// conn.close();
+								} catch (Exception e) {
+									// TODO Auto-generated catch block
+//									e.printStackTrace();
+								}
+							}
+
+						} else {
+							System.out.println("Iterator list 的大小是0");
+						}
 					} else {
-						System.out.println("Iterator list 的大小是0");
+						System.out.println("Iterator list is null");
 					}
-				} else {
-					System.out.println("Iterator list is null");
+				num++;
 				}
+			} else {
+				System.out.println("Iterator is null");
 			}
-		} else {
-			System.out.println("Iterator is null");
-		}
 		} catch (Exception e) {
 			// TODO: handle exception
-			e.printStackTrace();
-		}finally {
+//			e.printStackTrace();
+		} finally {
 			// TODO: handle finally clause
 			try {
-//				rs.close();
-//				ps.close();
-				conn.close();
-			} catch (SQLException e) {
+				// rs.close();
+				// ps.close();
+//				if (conn != null) {
+////					DBUtil.closeConnection();
+//					conn.close();
+//				} else {
+//					System.out.println("conn 是null");
+//				}
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 		long dbendTime = System.currentTimeMillis();
-		System.out.println(
-				"Cost batch everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
+//		if (count != null) {
+//			if (countAll != 0) {
+//			System.out.println("该次需要保存的list的size是：+ list.size()"  + "," + "执行成功的个数是:" + count.length + ","
+//					+ "Cost batch everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
+//
+//		} else {
+//			System.out.println("执行没有成功，count是null");
+//		}
+		System.out.println("循环了多少次:"+num+",该次需要保存的数量是："+countAll  + ",Cost everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
 //		List<ReIdAttributesTemp> outlist = new ArrayList<>();
 		/*String Outsql = "MATCH (a:Person{trackletID: {1}})-[r:Similarity]-(b:Person{trackletID: {2}}) return a.trackletID,b.trackletID,r.Minute";
 		PreparedStatement psOut = null;

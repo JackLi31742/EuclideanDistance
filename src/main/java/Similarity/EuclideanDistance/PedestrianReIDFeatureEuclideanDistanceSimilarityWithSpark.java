@@ -39,6 +39,8 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		
 //		dbConnSingleton=new SingletonUtil<>(Neo4jConnector::new, Neo4jConnector.class);
 //		dbConnector=dbConnSingleton.getInst();
+//		System.out.println(this.getClass().getResource("/c3p0-config.xml"));
+//		System.setProperty("com.mchange.v2.c3p0.cfg.xml",this.getClass().getResource("/c3p0-config.xml"));
 		dbConnector=new Neo4jConnector();
 //		neo4jDaoJdbc = new Neo4jDaoJdbc();
 //		neo4jDaoJdbc.loadConfig();
@@ -165,6 +167,7 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark p=new PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark();
 		p.init();
 		p.addToContext(args);
+		
 //		Neo4jDaoJdbc neo4jDaoJdbc = new Neo4jDaoJdbc();
 //		neo4jDaoJdbc.loadConfig();
 //		neo4jDaoJdbc.getConnection();

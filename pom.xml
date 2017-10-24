@@ -325,28 +325,43 @@
 			<artifactId>jama</artifactId>
 			<version>1.0.3</version>
 		</dependency>
-<!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-kernel -->
+		<!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-kernel -->
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j-kernel</artifactId>
+			<version>3.2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j-kernel</artifactId>
+			<version>2.0.0-M06</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-community -->
+		<!-- <dependency> <groupId>org.neo4j</groupId> <artifactId>neo4j-community</artifactId> 
+			<version>3.2.5</version> <type>pom</type> </dependency> -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-csv</artifactId>
+			<version>1.5</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.mchange/c3p0 -->
+		<dependency>
+			<groupId>com.mchange</groupId>
+			<artifactId>c3p0</artifactId>
+			<version>0.9.5.2</version>
+		</dependency>
+<!-- https://mvnrepository.com/artifact/commons-dbutils/commons-dbutils -->
 <dependency>
-    <groupId>org.neo4j</groupId>
-    <artifactId>neo4j-kernel</artifactId>
-    <version>3.2.5</version>
+    <groupId>commons-dbutils</groupId>
+    <artifactId>commons-dbutils</artifactId>
+    <version>1.6</version>
 </dependency>
-<dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>2.0.0-M06</version>
-        </dependency>
-        	<!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-community -->
+<!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-jdbc -->
 <!-- <dependency>
     <groupId>org.neo4j</groupId>
-    <artifactId>neo4j-community</artifactId>
-    <version>3.2.5</version>
-    <type>pom</type>
+    <artifactId>neo4j-jdbc</artifactId>
+    <version>3.1.0</version>
 </dependency> -->
-<dependency>
-    <groupId>org.apache.commons</groupId>
-    <artifactId>commons-csv</artifactId>
-    <version>1.5</version>
-</dependency>
+
 	</dependencies>
 </project>

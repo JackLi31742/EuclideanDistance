@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<c3p0-config>  
+    <!-- <named-config name="c3p0neo4j">   -->
+     <default-config>  
+        <property name="driverClass">org.neo4j.jdbc.Driver</property>  
+        <property name="jdbcUrl">jdbc\:neo4j\:bolt\://172.18.33.37</property>  
+        <property name="user">neo4j</property>  
+        <property name="password">casia@1234</property>  
+        <property name="maxPoolSize">20</property>  
+        <property name="minPoolSize">3</property>  
+        <!-- <property name="maxStatements">30</property>  
+        <property name="maxIdleTime">150</property>  --> 
+    <!-- </named-config>   -->
+   </default-config>
+</c3p0-config>  
