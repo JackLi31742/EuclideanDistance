@@ -177,9 +177,9 @@ public abstract class GraphDatabaseConnector implements Serializable{
     public abstract List<float[]> getPedestrianReIDFeatureList(@Nonnull boolean isFinish,boolean IsGetSim)throws NoSuchElementException;
     
     //得到Minute节点
-    public abstract List<Minute> getMinutes();
+    public abstract List<Minute> getMinutes(String dataType);
     //得到Hour节点
-    public abstract List<Hour> getHours();
+    public abstract List<Hour> getHours(String dataType);
 //    //得到day
 //    public abstract List<Day> getDays(Month month);
 //    //得到month
@@ -188,10 +188,10 @@ public abstract class GraphDatabaseConnector implements Serializable{
 //    public abstract List<Year> getYears();
     
     //根据minute，得到符合条件的节点，用来做相似度计算
-    public abstract List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Minute minute)throws NoSuchElementException;
+    public abstract List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Minute minute,String dataType)throws NoSuchElementException;
     
     //通过Hour得到符合条件的Person节点
-    public abstract List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Hour hour) throws NoSuchElementException;
+    public abstract List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Hour hour,String dataType) throws NoSuchElementException;
     
     
     
@@ -207,10 +207,10 @@ public abstract class GraphDatabaseConnector implements Serializable{
     
     
     //增加一条边,保存相似度,minute
-    public abstract List<ReIdAttributesTemp> addSimRel(@Nonnull String nodeID1,@Nonnull String nodeID2,@Nonnull double SimRel);
+    public abstract List<ReIdAttributesTemp> addSimRel(@Nonnull String nodeID1,@Nonnull String nodeID2,@Nonnull double SimRel,String dataType);
     
   //增加一条边,保存相似度,hour
-    public abstract List<ReIdAttributesTemp> addHourSimRel(@Nonnull String nodeID1,@Nonnull String nodeID2,@Nonnull double SimRel);
+    public abstract List<ReIdAttributesTemp> addHourSimRel(@Nonnull String nodeID1,@Nonnull String nodeID2,@Nonnull double SimRel,String dataType);
     
     //判断是否已经存在这条边,如果有，则为true
     public abstract boolean isaddSimRel(@Nonnull String nodeID1,@Nonnull String nodeID2,@Nonnull double SimRel);
@@ -233,4 +233,6 @@ public abstract class GraphDatabaseConnector implements Serializable{
     public abstract void restore();
     
     public abstract List<ReIdAttributesTemp> getPedestrianReIDFeatureList();
+    
+    public abstract void delete(@Nonnull String nodeID1,@Nonnull String nodeID2);
 }

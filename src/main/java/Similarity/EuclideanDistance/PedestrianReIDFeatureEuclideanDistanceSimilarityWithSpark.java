@@ -17,8 +17,8 @@ import Similarity.EuclideanDistance.util.SingletonUtil;
 import demo.Similarity;
 import demo.Similarity2;
 import entities.Hour;
+import entities.Minute;
 import entities.ReIdAttributesTemp;
-import entities.ReIdAttributesTempRDD;
 	/**
 	 * 计算相似度
 	 */
@@ -148,7 +148,7 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //			dbConnector.addIsGetSim(id1, false);
 //			dbConnector.addIsGetSim(id2, false);
 				long dbstartTime = System.currentTimeMillis();
-				dbConnector.addSimRel(id1, id2, sim);
+//				dbConnector.addSimRel(id1, id2, sim);
 				long dbendTime = System.currentTimeMillis();
 				logger.info("Cost time of db: " + (dbendTime - dbstartTime) + "ms");
 			}
@@ -194,7 +194,6 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 //		new reduceTest().reducetest();
 	}
 
-//	@Override
 	public void addToContext(String[] args) {
 
 //		SparkConf conf=new SparkConf().setMaster("spark://rtask-nod8:7077").setAppName("Euclidean-Distance");
@@ -204,35 +203,39 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 		try {
 			if (args[0].equals("minute")) {
 			
-				long dbstartTime = System.currentTimeMillis();
-//				List<ReIdAttributesTemp> list=neo4jDaoJdbc.getPedestrianReIDFeatureList();
-				List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList();
-				long dbendTime = System.currentTimeMillis();
-				System.out.println("加载时间 : " + (dbendTime - dbstartTime) + "ms");
-				getSim(list,args);
-				/*List<Minute> minList=dbConnector.getMinutes();
+//				long dbstartTime = System.currentTimeMillis();
+////				List<ReIdAttributesTemp> list=neo4jDaoJdbc.getPedestrianReIDFeatureList();
+//				List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList();
+//				long dbendTime = System.currentTimeMillis();
+//				System.out.println("加载时间 : " + (dbendTime - dbstartTime) + "ms");
+//				getSim(list,args);
+				List<Minute> minList=dbConnector.getMinutes(args[1]);
 			
 				if (minList!=null) {
-			
+					System.out.println("min节点个数是："+minList.size());
+					int count=0;
 		
 					for (int i = 0; i < minList.size(); i++) {
-//			System.out.println("minList.get(i):"+i+":"+minList.get(i));
-						List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(minList.get(i));
-		
-//			List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(new Minute());
+						//			System.out.println("minList.get(i):"+i+":"+minList.get(i));
+						long dbstartTime = System.currentTimeMillis();
+						System.out.println("开始加载");
+						List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(minList.get(i),args[1]);
+						long dbendTime = System.currentTimeMillis();
+						//			List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(new Minute());
 			
 						if (list!=null) {
 							
 							if (list.size()>0) {
-								System.out.println("找到的minute是："+minList.get(i).toString());
+								System.out.println("加载时间 : "+i+":" + (dbendTime - dbstartTime) + "ms");
+								System.out.println("找到的minute是："+i+":" +minList.get(i).toString());
 			//				System.out.println(minList.get(i)+":"+list.size());
-			
+								count+=list.size();
 								try {
-									for (int j = 0; j <list.size(); j++) {
-										System.out.println("out:--------------------------------");
-										System.out.println(list.get(j).toString());
-										
-									}
+//									for (int j = 0; j <list.size(); j++) {
+//										System.out.println("out:--------------------------------");
+//										System.out.println(list.get(j).toString());
+//										
+//									}
 									getSim(list,args);
 								} catch (Exception e) {
 									// TODO Auto-generated catch block
@@ -241,44 +244,50 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 							}
 						}
 					}
-				}*/
+					
+					System.out.println("所有的数量是："+count);
+				}
 			}
 			if (args[0].equals("hour")) {
-
 				
-				
-				List<Hour> hourList=dbConnector.getHours();
+				List<Hour> hourList=dbConnector.getHours(args[1]);
 			
 				if (hourList!=null) {
-			
+					System.out.println("hour节点个数是："+hourList.size());
 		
+					int count=0;
 					for (int i = 0; i < hourList.size(); i++) {
-						List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(hourList.get(i));
+						long dbstartTime = System.currentTimeMillis();
+						System.out.println("开始加载");
+						List<ReIdAttributesTemp> list=dbConnector.getPedestrianReIDFeatureList(hourList.get(i),args[1]);
+						long dbendTime = System.currentTimeMillis();
 				
-				/**
-				 * 模拟得到hourList下的节点
-				 */
-				/*List<ReIdAttributesTemp> list=new ArrayList<>();
-				List<Minute> minList=dbConnector.getMinutes();
-				
-				if (minList != null) {
-					for (int i = 0; i < minList.size(); i++) {
-						List<ReIdAttributesTemp> list2 = dbConnector.getPedestrianReIDFeatureList(minList.get(i));
-						if (list2 != null) {
-
-							if (list2.size() > 0) {
-								list.addAll(list2);
+						/**
+						 * 模拟得到hourList下的节点
+						 */
+						/*List<ReIdAttributesTemp> list=new ArrayList<>();
+						List<Minute> minList=dbConnector.getMinutes();
+						
+						if (minList != null) {
+							for (int i = 0; i < minList.size(); i++) {
+								List<ReIdAttributesTemp> list2 = dbConnector.getPedestrianReIDFeatureList(minList.get(i));
+								if (list2 != null) {
+		
+									if (list2.size() > 0) {
+										list.addAll(list2);
+									}
+								}
 							}
-						}
-					}
-				}*/
-				if (list != null) {
+						}*/
+						if (list != null) {
 
-					if (list.size() > 0) {
-								System.out.println("找到的hour是："+hourList.get(i).toString());
-							
+							if (list.size() > 0) {
+								System.out.println("加载时间 : "+i+":" + (dbendTime - dbstartTime) + "ms");
+								System.out.println("找到的hour是：" + i + ":" + hourList.get(i).toString());
+								System.out.println("传入的list大小为：" + list.size());
+								count+=list.size();
 								try {
-									getSim(list,args);
+									getSim(list, args);
 								} catch (Exception e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -286,9 +295,9 @@ public class PedestrianReIDFeatureEuclideanDistanceSimilarityWithSpark implement
 							}
 						}
 					}
+					
+					System.out.println("所有的数量是："+count);
 				}
-			
-						
 			}
 		}catch (Exception e) {
 			// TODO Auto-generated catch block

@@ -52,8 +52,9 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	 */
 	private static final long serialVersionUID = -1741972648494898750L;
 	Driver driver = GraphDatabase.driver(
-			"bolt://172.18.33.37:7687",
-//			"bolt://172.18.33.84:7687",
+//			"bolt://172.18.33.37:7687",
+			"bolt://172.18.33.8:7687",
+//			"bolt://172.18.32.89:7687",
             AuthTokens.basic("neo4j", "casia@1234"));
 //	Session session = driver.session();
 	/*private  Driver driver ;
@@ -1082,76 +1083,88 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	}
 
 	@Override
-	public List<ReIdAttributesTemp> addSimRel( String nodeID1, String nodeID2, double SimRel) {
+	public synchronized List<ReIdAttributesTemp> addSimRel(String nodeID1, String nodeID2, double SimRel, String dataType) {
 		Session session = driver.session();
-//		Transaction tx=session.beginTransaction();
+//		Transaction tx = session.beginTransaction();
 		long dbstartTime = System.currentTimeMillis();
-		List<ReIdAttributesTemp> list=new ArrayList<>();
-//		RagManager rm=new RagManager();
+		List<ReIdAttributesTemp> list = new ArrayList<>();
 		try {
-		StatementResult result = session.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) "
-				+ "MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
-        		+ "return a.trackletID,b.trackletID,r.Minute;"
-                ,Values.parameters("id1", nodeID1, "id2", nodeID2,"Minute", SimRel));
-		while (result.hasNext()) {
-			Record record = result.next();
-			ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
-			String trackletID1 = record.get("a.trackletID").asString();
-			String trackletID2 = record.get("b.trackletID").asString();
-			Double sim = (Double)record.get("r.Minute").asNumber();
-			if (!(trackletID1.equals("null"))) {
-				reIdAttributesTemp.setTrackletID1(trackletID1);
-			}
-			if (!(trackletID2.equals("null"))) {
-				reIdAttributesTemp.setTrackletID2(trackletID2);
-			}
-				
+			StatementResult result = session.run(
+					"MATCH (a:Person {trackletID: {id1},dataType:'" + dataType
+							+ "'}), (b:Person {trackletID: {id2},dataType:'" + dataType + "'}) "
+							+ "MERGE (a)-[r:Similarity]-(b) set r.Minute={Minute} "
+							+ "return a.trackletID,b.trackletID,r.Minute;",
+					Values.parameters("id1", nodeID1, "id2", nodeID2, "Minute", SimRel));
+			while (result.hasNext()) {
+				Record record = result.next();
+				ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
+				String trackletID1 = record.get("a.trackletID").asString();
+				String trackletID2 = record.get("b.trackletID").asString();
+				Double sim = (Double) record.get("r.Minute").asNumber();
+				if (!(trackletID1.equals("null"))) {
+					reIdAttributesTemp.setTrackletID1(trackletID1);
+				}
+				if (!(trackletID2.equals("null"))) {
+					reIdAttributesTemp.setTrackletID2(trackletID2);
+				}
+
 				reIdAttributesTemp.setSim(sim);
 				list.add(reIdAttributesTemp);
-            
-        }
-//		tx.success();
-        long dbendTime = System.currentTimeMillis();
-        System.out.println("Cost everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
+
+			}
+//			tx.success();
+			long dbendTime = System.currentTimeMillis();
+			System.out.println("Cost everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
 		} catch (Exception e) {
 			// TODO: handle exception
-		}finally {
+			e.printStackTrace();
+		} finally {
 //			tx.close();
 			session.close();
 		}
-        return list;
+		return list;
 	}
 	
 	@Override
-	public List<ReIdAttributesTemp> addHourSimRel( String nodeID1, String nodeID2, double SimRel) {
+	public synchronized List<ReIdAttributesTemp> addHourSimRel(String nodeID1, String nodeID2, double SimRel, String dataType) {
 		// TODO Auto-generated method stub
 		Session session = driver.session();
+		Transaction tx = session.beginTransaction();
+		List<ReIdAttributesTemp> list = new ArrayList<>();
 		long dbstartTime = System.currentTimeMillis();
-		StatementResult result = session.run("MATCH (a:Person {trackletID: {id1}}), (b:Person {trackletID: {id2}}) MERGE (a)-[r:Similarity]-(b) set r.Hour={Hour} "
-        		+ "return a.trackletID,b.trackletID,r.Hour;"
-                ,Values.parameters("id1", nodeID1, "id2", nodeID2,"Hour", SimRel));
-		List<ReIdAttributesTemp> list=new ArrayList<>();
-		while (result.hasNext()) {
-			Record record = result.next();
-			ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
-			String trackletID1 = record.get("a.trackletID").asString();
-			String trackletID2 = record.get("b.trackletID").asString();
-			Double sim =(Double) record.get("r.Hour").asNumber();
-			if (!(trackletID1.equals("null"))) {
-				reIdAttributesTemp.setTrackletID1(trackletID1);
-			}
-			if (!(trackletID2.equals("null"))) {
-				reIdAttributesTemp.setTrackletID2(trackletID2);
-			}
-				
+		try {
+			StatementResult result = tx.run("MATCH (a:Person {trackletID: {id1},dataType:'" + dataType
+					+ "'}), (b:Person {trackletID: {id2},dataType:'" + dataType + "'}) "
+					+ "MERGE (a)-[r:Similarity]-(b) set r.Hour={Hour} " + "return a.trackletID,b.trackletID,r.Hour;",
+					Values.parameters("id1", nodeID1, "id2", nodeID2, "Hour", SimRel));
+			while (result.hasNext()) {
+				Record record = result.next();
+				ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
+				String trackletID1 = record.get("a.trackletID").asString();
+				String trackletID2 = record.get("b.trackletID").asString();
+				Double sim = (Double) record.get("r.Hour").asNumber();
+				if (!(trackletID1.equals("null"))) {
+					reIdAttributesTemp.setTrackletID1(trackletID1);
+				}
+				if (!(trackletID2.equals("null"))) {
+					reIdAttributesTemp.setTrackletID2(trackletID2);
+				}
+
 				reIdAttributesTemp.setSim(sim);
 				list.add(reIdAttributesTemp);
-            
-        }
-        long dbendTime = System.currentTimeMillis();
-        System.out.println("Cost time of hour everytime: " + (dbendTime - dbstartTime) + "ms");
-        session.close();
-        return list;
+
+			}
+			tx.success();
+			long dbendTime = System.currentTimeMillis();
+			System.out.println("Cost time of hour everytime: " + (dbendTime - dbstartTime) + "ms");
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		} finally {
+			tx.close();
+			session.close();
+		}
+		return list;
 	}
 	
 	//删除不必要的节点
@@ -1196,12 +1209,12 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 	}
 
 	@Override
-	public List<Minute> getMinutes() {
+	public List<Minute> getMinutes(String dataType) {
 		 Session session = driver.session();
-		Transaction tx = session.beginTransaction();
+//		Transaction tx = session.beginTransaction();
 		List<Minute> list = new ArrayList<>();
 		try {
-			StatementResult result = tx.run("MATCH (n:Minute) RETURN n.start,n.end order by n.start;");
+			StatementResult result = session.run("MATCH (n:Minute:"+dataType+") RETURN n.start,n.end order by n.start;");
 			while (result.hasNext()) {
 				Record record = result.next();
 				Long start = (Long) record.get("n.start").asNumber();
@@ -1211,22 +1224,23 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				minute.setStart(start);
 				list.add(minute);
 			}
-			tx.success();
+//			tx.success();
 		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
-			tx.close();
+//			tx.close();
 			 session.close();
 		}
 		return list;
 	}
 	
 	@Override
-	public List<Hour> getHours() {
+	public List<Hour> getHours(String dataType) {
 		 Session session = driver.session();
-		Transaction tx = session.beginTransaction();
+//		Transaction tx = session.beginTransaction();
 		List<Hour> list = new ArrayList<>();
 		try {
-			StatementResult result = tx.run("MATCH (n:Hour) RETURN n.hour order by n.hour;");
+			StatementResult result = session.run("MATCH (n:Hour:"+dataType+") RETURN n.hour order by n.hour;");
 			while (result.hasNext()) {
 				Record record = result.next();
 				Long h = (Long) record.get("n.hour").asNumber();
@@ -1234,32 +1248,33 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 				hour.setHour(h);
 				list.add(hour);
 			}
-			tx.success();
+//			tx.success();
 		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
-			tx.close();
+//			tx.close();
 			 session.close();
 		}
 		return list;
 	}
 
 	@Override
-	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Hour hour) throws NoSuchElementException {
+	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Hour hour,String dataType) throws NoSuchElementException {
 		 Session session = driver.session();
-		Transaction tx = session.beginTransaction();
+//		Transaction tx = session.beginTransaction();
 		List<ReIdAttributesTemp> list = new ArrayList<>();
 		try {
-			StatementResult result = tx.run(
-					"MATCH (a:Hour" + "{hour:{hour}}"
-							+ ")-[:HAS_MIN]-(b:Minute)-[:INCLUDES_PERSON]-(c:Person{dataType:'track-reid-20170907'})  "
-							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature,c.camID,c.startTime,b.start order by a.hour;",
+			StatementResult result = session.run(
+					"MATCH (a:Hour:"+dataType + "{hour:{hour}}"
+							+ ")-[:HAS_MIN]-(b:Minute:"+dataType+")-[:INCLUDES_PERSON]-(c:Person{dataType:'"+dataType+"'})  "
+							+ "where c.reidFeature is not null return c.trackletID,c.reidFeature order by a.hour;",
 					Values.parameters("hour", hour.getHour().longValue()));
 			while (result.hasNext()) {
 				Record record = result.next();
 				ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
-				String camID = record.get("c.camID").asString();
-				Long startTime = (Long) record.get("c.startTime").asNumber();
-				Long start = (Long) record.get("b.start").asNumber();
+//				String camID = record.get("c.camID").asString();
+//				Long startTime = (Long) record.get("c.startTime").asNumber();
+//				Long start = (Long) record.get("b.start").asNumber();
 				String trackletID = record.get("c.trackletID").asString();
 				String featureBase64Str = record.get("c.reidFeature").asString();
 				if (!featureBase64Str.equals("null")) {
@@ -1269,44 +1284,47 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 					reIdAttributesTemp.setFeatureVector(feature.getVector());
 
 				}
-				reIdAttributesTemp.setCamID(camID);
+//				reIdAttributesTemp.setCamID(camID);
 				if (!trackletID.equals("null")) {
 
 					reIdAttributesTemp.setTrackletID(trackletID);
 				}
 				// reIdAttributesTemp.setReidFeature(featureBase64Str);
-				reIdAttributesTemp.setStartTime(startTime);
-				reIdAttributesTemp.setStart(start);
+//				reIdAttributesTemp.setStartTime(startTime);
+//				reIdAttributesTemp.setStart(start);
 				// list.add(feature.getVector());
 				list.add(reIdAttributesTemp);
 			}
-			tx.success();
+//			tx.success();
 		} catch (Exception e) {
 			// TODO: handle exception
+			e.printStackTrace();
 		} finally {
-			tx.close();
+//			tx.close();
 			 session.close();
 		}
 		return list;
 	}
 	
 	@Override
-	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Minute minute) throws NoSuchElementException {
+	public List<ReIdAttributesTemp> getPedestrianReIDFeatureList(Minute minute,String dataType) throws NoSuchElementException {
 		Session session = driver.session();
 //		Transaction tx = session.beginTransaction();
 		List<ReIdAttributesTemp> list = new ArrayList<>();
+		
 		try {
+			//,b.camID,b.startTime,a.start
 			StatementResult result = session.run(
-					"MATCH (a:Minute" + "{start:{start}}"
-							+ ")-[:INCLUDES_PERSON]-(b:Person{dataType:'track-reid-20170907'})  "
-							+ "where b.reidFeature is not null return b.trackletID,b.reidFeature,b.camID,b.startTime,a.start order by a.start;",
+					"MATCH (a:Minute:"+dataType + "{start:{start}}"
+							+ ")-[:INCLUDES_PERSON]-(b:Person{dataType:'"+dataType+"'})  "
+							+ "where b.reidFeature is not null return b.trackletID,b.reidFeature order by a.start;",
 					Values.parameters("start", minute.getStart().longValue()));
 			while (result.hasNext()) {
 				Record record = result.next();
 				ReIdAttributesTemp reIdAttributesTemp = new ReIdAttributesTemp();
-				String camID = record.get("b.camID").asString();
-				Long startTime = (Long) record.get("b.startTime").asNumber();
-				Long start = (Long) record.get("a.start").asNumber();
+//				String camID = record.get("b.camID").asString();
+//				Long startTime = (Long) record.get("b.startTime").asNumber();
+//				Long start = (Long) record.get("a.start").asNumber();
 				String trackletID = record.get("b.trackletID").asString();
 				String featureBase64Str = record.get("b.reidFeature").asString();
 				if (!featureBase64Str.equals("null")) {
@@ -1316,13 +1334,13 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 					reIdAttributesTemp.setFeatureVector(feature.getVector());
 
 				}
-				reIdAttributesTemp.setCamID(camID);
+//				reIdAttributesTemp.setCamID(camID);
 				if (!trackletID.equals("null")) {
 
 					reIdAttributesTemp.setTrackletID(trackletID);
 				}
-				reIdAttributesTemp.setStartTime(startTime);
-				reIdAttributesTemp.setStart(start);
+//				reIdAttributesTemp.setStartTime(startTime);
+//				reIdAttributesTemp.setStart(start);
 				list.add(reIdAttributesTemp);
 			}
 //			tx.success();
@@ -1512,6 +1530,47 @@ public class Neo4jConnector extends GraphDatabaseConnector {
 			session.close();
 			return list;
 		
+	}
+
+	@Override
+	public void delete(String nodeID1, String nodeID2) {
+		// TODO Auto-generated method stub
+		Session session = driver.session();
+//		Transaction tx=session.beginTransaction();
+//		long dbstartTime = System.currentTimeMillis();
+		List<ReIdAttributesTemp> list=new ArrayList<>();
+//		RagManager rm=new RagManager();
+		try {
+		StatementResult result = session.run("MATCH (a:Person {trackletID: {id1}})-[r:Similarity]-(b:Person {trackletID: {id2}}) "
+				+ "delete r; "
+                ,Values.parameters("id1", nodeID1, "id2", nodeID2));
+//		while (result.hasNext()) {
+//			Record record = result.next();
+//			ReIdAttributesTemp reIdAttributesTemp=new ReIdAttributesTemp();
+//			String trackletID1 = record.get("a.trackletID").asString();
+//			String trackletID2 = record.get("b.trackletID").asString();
+//			Double sim = (Double)record.get("r.Minute").asNumber();
+//			if (!(trackletID1.equals("null"))) {
+//				reIdAttributesTemp.setTrackletID1(trackletID1);
+//			}
+//			if (!(trackletID2.equals("null"))) {
+//				reIdAttributesTemp.setTrackletID2(trackletID2);
+//			}
+//				
+//				reIdAttributesTemp.setSim(sim);
+//				list.add(reIdAttributesTemp);
+//            
+//        }
+//		tx.success();
+//        long dbendTime = System.currentTimeMillis();
+//        System.out.println("Cost everytime of addSimRel of minute : " + (dbendTime - dbstartTime) + "ms");
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}finally {
+//			tx.close();
+			session.close();
+		}
 	}
 	
 }

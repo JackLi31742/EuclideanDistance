@@ -23,7 +23,7 @@ public class DataSourceSingleton {
 	              
 	            ds.setDriverClass("org.neo4j.jdbc.Driver");//设置连接池连接数据库所需的驱动  
 	              
-	            ds.setJdbcUrl("jdbc:neo4j:bolt://172.18.33.37");//设置连接数据库的URL  
+	            ds.setJdbcUrl("jdbc:neo4j:bolt://172.18.33.8");//设置连接数据库的URL  
 	              
 	            ds.setUser("neo4j");//设置连接数据库的用户名  
 	              

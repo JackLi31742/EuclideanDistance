@@ -19,7 +19,7 @@ public class DBUtil implements Serializable{
 	// 定义数据库的驱动信息
 	private static final String DRIVER="org.neo4j.jdbc.Driver";
 	// 定义访问数据库的地址
-	private static final String URL="jdbc:neo4j:bolt://172.18.33.37";
+	private static final String URL="jdbc:neo4j:bolt://172.18.33.8";
 	
 	// 定义一个用于放置数据库连接的局部线程变量（使每个线程都拥有自己的连接）  
     private static ThreadLocal<Connection> connContainer = new ThreadLocal<Connection>(); 

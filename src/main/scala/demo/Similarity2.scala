@@ -275,7 +275,7 @@ class Similarity2 extends Serializable{
             //            println("dbConnector的开启状态："+dbConnector.isOpen)
             if (!(f._2(i)._2.toString().equals("null"))) {
 
-              val outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2)
+              val outlist = dbConnector.addSimRel(f._1, f._2(i)._1, f._2(i)._2,args(1))
               println("min保存完成的结果是：" + outlist.toString())
             }
           }
@@ -1036,7 +1036,7 @@ else if(args(0).equals("hour")){
         for(i <- 0 until f._2.length){
             println("hour需要保存的结果是：[{'sim':"+f._2(i)._2+",'trackletID1':'"+f._1+"','trackletID2':'"+f._2(i)._1+"'}]")
             
-             val outlist=dbConnector.addHourSimRel(f._1, f._2(i)._1, f._2(i)._2)
+             val outlist=dbConnector.addHourSimRel(f._1, f._2(i)._1, f._2(i)._2,args(1))
             println("hour保存完成的结果是："+outlist.toString())
         }
     		
